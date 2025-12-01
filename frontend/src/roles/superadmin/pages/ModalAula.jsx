@@ -7,6 +7,7 @@ const TIPOS_URL = 'http://localhost:5000/superadmin/pabellones/tipos-aula';
 const PABELLONES_URL = 'http://localhost:5000/superadmin/pabellones/pabellones';
 
 const AULA_INICIAL = {
+    codigo:'',
     nombre_aula: '',
     capacidad: '',
     estado: 'OPERATIVO',
@@ -109,6 +110,7 @@ function ModalAula({ isOpen, onClose, onSave, aulaData }) {
                     <h2>{isEditing ? 'Editar Aula' : 'Nueva Aula'}</h2>
                     <button onClick={onClose} className="close-button">&times;</button>
                 </div>
+                
                 <form onSubmit={handleSubmit} noValidate>
                     <div className="form-group">
                         <label>Nombre del Aula *</label>

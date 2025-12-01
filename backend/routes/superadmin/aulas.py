@@ -18,11 +18,14 @@ def listar_aulas():
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        # --- CORRECCIÓN REALIZADA ---
+        # 1. Se eliminó 'a.ciclo' porque no existe en la tabla.
+        # 2. Se mantiene 'a.codigo_a' que es el código visual (ej: A-302).
         cur.execute("""
             SELECT 
                 a.aula_id, 
-                a.nombre_aula AS codigo,
-                a.nombre_aula AS nombre,
+                a.codigo_a, 
+                a.nombre_aula,
                 a.capacidad, 
                 a.estado,
                 tac.nombre_tipo AS tipo,
@@ -30,7 +33,7 @@ def listar_aulas():
             FROM aula a
             LEFT JOIN tipo_aula_cat tac ON a.tipo_aula_id = tac.tipo_aula_id
             LEFT JOIN pabellon pab ON a.pabellon_id = pab.pabellon_id
-            ORDER BY a.nombre_aula ASC;
+            ORDER BY a.codigo_a ASC; 
         """)
         aulas = cur.fetchall()
         return jsonify(aulas), 200
@@ -46,13 +49,15 @@ def listar_aulas():
 @aulas_bp.route('/aulas', methods=['POST'])
 def crear_aula():
     data = request.json
+    codigo_a = data.get('codigo_a') 
     nombre_aula = data.get('nombre_aula')
     capacidad = data.get('capacidad')
     estado = data.get('estado')
     tipo_aula_id = data.get('tipo_aula_id')
     pabellon_id = data.get('pabellon_id')
     
-    if not all([nombre_aula, capacidad, tipo_aula_id, pabellon_id, estado]):
+    # Validamos campos obligatorios
+    if not all([codigo_a, nombre_aula, capacidad, tipo_aula_id, pabellon_id, estado]):
         return jsonify({"error": "Faltan campos obligatorios."}), 400
 
     conn = None
@@ -60,17 +65,18 @@ def crear_aula():
     try:
         conn = get_db()
         cur = conn.cursor()
+        
         cur.execute("""
-            INSERT INTO aula (nombre_aula, capacidad, estado, tipo_aula_id, pabellon_id)
-            VALUES (%s, %s, %s, %s, %s);
-        """, (nombre_aula, capacidad, estado, tipo_aula_id, pabellon_id))
+            INSERT INTO aula (codigo_a, nombre_aula, capacidad, estado, tipo_aula_id, pabellon_id)
+            VALUES (%s, %s, %s, %s, %s, %s);
+        """, (codigo_a, nombre_aula, capacidad, estado, tipo_aula_id, pabellon_id))
         
         conn.commit()
         return jsonify({"mensaje": "Aula registrada exitosamente."}), 201
         
     except psycopg2.IntegrityError:
         if conn: conn.rollback()
-        return jsonify({"error": "El nombre del aula ya existe o un ID es inválido."}), 400
+        return jsonify({"error": "El código o nombre del aula ya existe."}), 400
     except Exception as e:
         if conn: conn.rollback()
         print(f"❌ Error al crear aula: {e}")
@@ -83,6 +89,7 @@ def crear_aula():
 @aulas_bp.route('/aulas/<int:aula_id>', methods=['PUT'])
 def actualizar_aula(aula_id):
     data = request.json
+    codigo_a = data.get('codigo_a')
     nombre_aula = data.get('nombre_aula')
     capacidad = data.get('capacidad')
     estado = data.get('estado')
@@ -94,11 +101,12 @@ def actualizar_aula(aula_id):
     try:
         conn = get_db()
         cur = conn.cursor()
+        
         cur.execute("""
             UPDATE aula
-            SET nombre_aula=%s, capacidad=%s, estado=%s, tipo_aula_id=%s, pabellon_id=%s
+            SET codigo_a=%s, nombre_aula=%s, capacidad=%s, estado=%s, tipo_aula_id=%s, pabellon_id=%s
             WHERE aula_id = %s;
-        """, (nombre_aula, capacidad, estado, tipo_aula_id, pabellon_id, aula_id))
+        """, (codigo_a, nombre_aula, capacidad, estado, tipo_aula_id, pabellon_id, aula_id))
         
         if cur.rowcount == 0:
             return jsonify({"error": "Aula no encontrada."}), 404
@@ -123,7 +131,7 @@ def eliminar_aula(aula_id):
         conn = get_db()
         cur = conn.cursor()
 
-        # Verificar si el aula está asignada en algún horario
+        # Verificar si el aula está asignada en algún horario VIGENTE
         cur.execute("""
             SELECT COUNT(*) 
             FROM horario h
