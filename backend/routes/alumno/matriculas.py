@@ -12,8 +12,7 @@ matriculas_bp = Blueprint("matriculas", __name__)
 def calcular_ciclo_estudiante_anual(ciclo_inicio):
     """
     Calcula el ciclo académico actual de un alumno considerando que
-    cada año tiene dos ciclos (I y II, luego III y IV, etc.)
-    Ejemplo: ciclo_inicio = "2023-I" → en 2025 estará en el VI ciclo.
+    cada año tiene dos ciclos.
     """
     ciclos = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
 
@@ -54,7 +53,7 @@ def calcular_ciclo_estudiante_anual(ciclo_inicio):
 
 
 # -------------------------------------------------------------------
-# 1️⃣ LISTAR ASIGNACIONES DISPONIBLES (ajustado para matrícula anual)
+# 1️⃣ LISTAR ASIGNACIONES DISPONIBLES (CORREGIDO)
 # -------------------------------------------------------------------
 @matriculas_bp.route("/asignaciones-disponibles/<int:alumno_id>", methods=["GET"])
 def listar_asignaciones_disponibles(alumno_id):
@@ -86,15 +85,14 @@ def listar_asignaciones_disponibles(alumno_id):
         idx = ciclo_indices.get(ciclo_estudiante, 0)
         ciclo_siguiente = ciclos_orden[idx + 1] if idx + 1 < len(ciclos_orden) else ciclo_estudiante
 
-        # Verificar si el ciclo actual es impar
-        es_impar = idx % 2 == 0  # (0 = I, 2 = III, etc.)
+        es_impar = idx % 2 == 0 
 
         if es_impar:
             ciclos_a_mostrar = (ciclo_estudiante, ciclo_siguiente)
         else:
             ciclos_a_mostrar = (ciclo_estudiante,)
 
-        # 3️⃣ Obtener las asignaciones para los ciclos indicados
+        # 3️⃣ Obtener las asignaciones (YA SIN BLOQUE_HORARIO)
         cur.execute("""
             SELECT 
                 a.asignacion_id,
@@ -104,9 +102,13 @@ def listar_asignaciones_disponibles(alumno_id):
                 s.codigo AS seccion,
                 s.periodo,
                 (p.nombres || ' ' || p.apellidos) AS docente,
-                bh.dia,
-                TO_CHAR(bh.hora_inicio, 'HH24:MI') AS hora_inicio,
-                TO_CHAR(bh.hora_fin, 'HH24:MI') AS hora_fin,
+                
+                -- CAMPOS DIRECTOS DE LA TABLA ASIGNACIONES
+                a.dia,
+                TO_CHAR(a.hora_inicio, 'HH24:MI') AS hora_inicio,
+                TO_CHAR(a.hora_fin, 'HH24:MI') AS hora_fin,
+                a.tipo,
+                
                 au.nombre_aula AS aula,
                 au.capacidad
             FROM asignaciones a
@@ -114,7 +116,7 @@ def listar_asignaciones_disponibles(alumno_id):
             JOIN secciones s ON a.seccion_id = s.seccion_id
             JOIN docente d ON a.docente_id = d.docente_id
             JOIN persona p ON d.persona_id = p.persona_id
-            JOIN bloque_horario bh ON a.bloque_id = bh.bloque_id
+            -- ELIMINADO JOIN bloque_horario
             JOIN aula au ON a.aula_id = au.aula_id
             WHERE c.ciclo IN %s
             ORDER BY c.ciclo, c.nombre ASC
@@ -137,7 +139,7 @@ def listar_asignaciones_disponibles(alumno_id):
 
 
 # -------------------------------------------------------------------
-# 2️⃣ MATRICULAR ALUMNO EN UNA ASIGNACIÓN (con validaciones avanzadas)
+# 2️⃣ MATRICULAR ALUMNO (CORREGIDO)
 # -------------------------------------------------------------------
 @matriculas_bp.route("/matricular", methods=["POST"])
 def matricular_alumno():
@@ -153,7 +155,7 @@ def matricular_alumno():
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
-        # 🧩 1️⃣ Obtener el estudiante_id si solo se pasa alumno_id
+        # 🧩 1️⃣ Obtener el estudiante_id
         if not estudiante_id and alumno_id:
             cur.execute("""
                 SELECT e.estudiante_id
@@ -167,12 +169,11 @@ def matricular_alumno():
                 return jsonify({"error": "No se encontró estudiante asociado."}), 404
             estudiante_id = row["estudiante_id"]
 
-        # 🧩 2️⃣ Obtener los datos del curso y ciclo al que pertenece la asignación
+        # 🧩 2️⃣ Obtener datos de la asignación (SIN BLOQUE_HORARIO)
         cur.execute("""
-            SELECT a.curso_id, c.ciclo, bh.dia, bh.hora_inicio, bh.hora_fin
+            SELECT a.curso_id, c.ciclo, a.dia, a.hora_inicio, a.hora_fin
             FROM asignaciones a
             JOIN curso c ON a.curso_id = c.curso_id
-            JOIN bloque_horario bh ON a.bloque_id = bh.bloque_id
             WHERE a.asignacion_id = %s
         """, (asignacion_id,))
         asignacion = cur.fetchone()
@@ -183,7 +184,7 @@ def matricular_alumno():
         curso_id = asignacion["curso_id"]
         ciclo_curso = asignacion["ciclo"]
 
-        # 🧩 3️⃣ Evitar doble matrícula (ya matriculado en el mismo curso)
+        # 🧩 3️⃣ Evitar doble matrícula
         cur.execute("""
             SELECT 1
             FROM matriculas m
@@ -193,13 +194,12 @@ def matricular_alumno():
         if cur.fetchone():
             return jsonify({"error": "Ya estás matriculado en este curso (otra sección)."}), 400
 
-        # 🕐 4️⃣ Verificar conflicto de horario (solo dentro del mismo ciclo)
+        # 🕐 4️⃣ Verificar conflicto de horario (SIN BLOQUE_HORARIO)
         cur.execute("""
-            SELECT c.nombre AS curso, bh.dia, bh.hora_inicio, bh.hora_fin
+            SELECT c.nombre AS curso, a.dia, a.hora_inicio, a.hora_fin
             FROM matriculas m
             JOIN asignaciones a ON m.asignacion_id = a.asignacion_id
             JOIN curso c ON a.curso_id = c.curso_id
-            JOIN bloque_horario bh ON a.bloque_id = bh.bloque_id
             WHERE m.estudiante_id = %s 
             AND m.estado = 'ACTIVA'
             AND c.ciclo = %s
@@ -224,23 +224,23 @@ def matricular_alumno():
         prereqs = [r["id_curso_requerido"] for r in cur.fetchall()]
 
         if prereqs:
-            # Buscar cursos aprobados (nota_final >= 11)
+            # CORRECCIÓN: Usamos 'promedio' porque así se llama en tu base de datos
             cur.execute("""
-                SELECT c.curso_id
-                FROM calificaciones cal
-                JOIN asignaciones AS a ON cal.asignacion_id = a.asignacion_id
-                JOIN curso c ON a.curso_id = c.curso_id
-                WHERE cal.estudiante_id = %s AND cal.nota_final >= 11
+                SELECT curso_id
+                FROM calificaciones
+                WHERE estudiante_id = %s 
+                AND promedio >= 11  
             """, (estudiante_id,))
+            
             aprobados = [r["curso_id"] for r in cur.fetchall()]
 
             faltantes = [req for req in prereqs if req not in aprobados]
             if faltantes:
                 return jsonify({
-                    "error": "No cumples los prerrequisitos para este curso."
+                    "error": "No cumples los prerrequisitos para este curso. Debes aprobar los cursos previos."
                 }), 400
 
-        # 🧾 6️⃣ Registrar la matrícula si pasa todas las verificaciones
+        # 🧾 6️⃣ Registrar matrícula
         cur.execute("""
             INSERT INTO matriculas (estudiante_id, asignacion_id, fecha_matricula, estado)
             VALUES (%s, %s, NOW(), 'ACTIVA')
@@ -259,10 +259,8 @@ def matricular_alumno():
         conn.close()
 
 
-
-
 # -------------------------------------------------------------------
-# 3️⃣ VER MATRÍCULAS DEL ALUMNO
+# 3️⃣ VER MATRÍCULAS DEL ALUMNO (CORREGIDO)
 # -------------------------------------------------------------------
 @matriculas_bp.route("/mis-matriculas/<int:alumno_id>", methods=["GET"])
 def mis_matriculas(alumno_id):
@@ -270,7 +268,7 @@ def mis_matriculas(alumno_id):
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
-        # 🧠 1️⃣ Convertir usuario_id → estudiante_id si es necesario
+        # 🧠 1️⃣ Convertir usuario_id → estudiante_id
         cur.execute("""
             SELECT e.estudiante_id
             FROM estudiante e
@@ -284,29 +282,33 @@ def mis_matriculas(alumno_id):
 
         estudiante_id = row["estudiante_id"]
 
-        # 🧠 2️⃣ Consultar las matrículas, incluyendo el ciclo del curso
+        # 🧠 2️⃣ Consultar las matrículas (SIN BLOQUE_HORARIO)
         cur.execute("""
             SELECT 
                 m.matricula_id,
                 c.nombre AS curso,
                 c.codigo AS codigo_curso,
-                c.ciclo AS ciclo,  -- ✅ agregamos el ciclo
+                c.ciclo AS ciclo,
                 s.codigo AS seccion,
                 s.periodo,
                 (p.nombres || ' ' || p.apellidos) AS docente,
-                bh.dia,
-                TO_CHAR(bh.hora_inicio, 'HH24:MI') AS hora_inicio,
-                TO_CHAR(bh.hora_fin, 'HH24:MI') AS hora_fin,
+                
+                -- CAMPOS DIRECTOS DE ASIGNACIONES
+                a.dia,
+                TO_CHAR(a.hora_inicio, 'HH24:MI') AS hora_inicio,
+                TO_CHAR(a.hora_fin, 'HH24:MI') AS hora_fin,
+                a.tipo AS tipo_sesion,
+                
                 au.nombre_aula AS aula,
                 m.estado,
                 m.fecha_matricula
             FROM matriculas m
             JOIN asignaciones a ON m.asignacion_id = a.asignacion_id
-            JOIN curso c ON a.curso_id = c.curso_id  -- aquí viene el ciclo
+            JOIN curso c ON a.curso_id = c.curso_id
             JOIN secciones s ON a.seccion_id = s.seccion_id
             JOIN docente d ON a.docente_id = d.docente_id
             JOIN persona p ON d.persona_id = p.persona_id
-            JOIN bloque_horario bh ON a.bloque_id = bh.bloque_id
+            -- ELIMINADO JOIN bloque_horario
             JOIN aula au ON a.aula_id = au.aula_id
             WHERE m.estudiante_id = %s
             ORDER BY c.ciclo, m.fecha_matricula DESC
@@ -343,4 +345,3 @@ def desmatricular_curso(matricula_id):
     finally:
         cur.close()
         conn.close()
-

@@ -14,6 +14,9 @@ def obtener_mis_asignaciones(estudiante_id):
         conn = get_db()
         cur = conn.cursor()
         
+        # CONSULTA ACTUALIZADA: 
+        # 1. Se eliminó 'LEFT JOIN bloque_horario bh'
+        # 2. Se leen dia, hora_inicio, hora_fin y tipo directamente de 'asig'
         query = """
             SELECT 
                 c.curso_id,
@@ -27,9 +30,10 @@ def obtener_mis_asignaciones(estudiante_id):
                 m.estado,
                 COALESCE(p.nombres, '') as docente_nombres,
                 COALESCE(p.apellidos, '') as docente_apellidos,
-                bh.dia,
-                bh.hora_inicio,
-                bh.hora_fin,
+                asig.dia,           -- Antes bh.dia
+                asig.hora_inicio,   -- Antes bh.hora_inicio
+                asig.hora_fin,      -- Antes bh.hora_fin
+                asig.tipo,          -- Nueva columna
                 COALESCE(
                     (SELECT 
                         ROUND(
@@ -47,7 +51,6 @@ def obtener_mis_asignaciones(estudiante_id):
             JOIN secciones s ON asig.seccion_id = s.seccion_id
             LEFT JOIN docente d ON asig.docente_id = d.docente_id
             LEFT JOIN persona p ON d.persona_id = p.persona_id
-            LEFT JOIN bloque_horario bh ON asig.bloque_id = bh.bloque_id
             WHERE e.estudiante_id = %s
             AND m.estado = 'ACTIVA'
             ORDER BY c.nombre
@@ -89,11 +92,12 @@ def obtener_mis_asignaciones(estudiante_id):
                 'estado': row[8],
                 'docente': docente_completo,
                 'horario': {
-                    'dia': row[11] if row[11] else None,
-                    'hora_inicio': str(row[12]) if row[12] else None,
-                    'hora_fin': str(row[13]) if row[13] else None
+                    'dia': row[11] if row[11] else "Por definir",
+                    'hora_inicio': str(row[12]) if row[12] else "",
+                    'hora_fin': str(row[13]) if row[13] else ""
                 },
-                'porcentaje_asistencia': float(row[14])
+                'tipo_sesion': row[14], # TEORICO / PRACTICO
+                'porcentaje_asistencia': float(row[15])
             })
         
         return jsonify({
