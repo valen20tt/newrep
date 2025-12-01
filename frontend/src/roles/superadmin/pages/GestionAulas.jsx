@@ -3,19 +3,14 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Search, Plus, Edit, Trash2, ListChecks } from 'lucide-react';
 
-// -----------------------------------------------------------------------------------
-// ¡ATENCIÓN! El error está en una de estas dos líneas.
-// Por favor, verifica tu explorador de archivos y asegúrate de que:
-// 1. El archivo 'ModalAula.jsx' está en esta misma carpeta.
-// 2. La carpeta 'styles' está aquí y DENTRO de ella está el archivo 'GestionAulas.css'.
-// Revisa mayúsculas y minúsculas.
-// -----------------------------------------------------------------------------------
 import ModalAula from './ModalAula.jsx'; 
 import '../styles/gestion-aula.css';
 
 const BASE_URL = 'http://localhost:5000/superadmin/aulas/aulas';
 
+// CORRECCIÓN 1: Usamos 'codigo' para que coincida con la Base de Datos y el Modal
 const AULA_INICIAL = {
+    codigo: '', 
     nombre_aula: '',
     capacidad: '',
     estado: 'OPERATIVO',
@@ -42,6 +37,7 @@ function GestionAulas() {
         setLoading(true);
         try {
             const res = await axios.get(BASE_URL);
+            // console.log("Aulas recibidas:", res.data); // Descomenta esto para ver qué nombres exactos llegan
             setAulas(res.data);
         } catch (err) {
             toast.error("Error al cargar los datos de las aulas.");
@@ -99,11 +95,19 @@ function GestionAulas() {
         return 'status-tag';
     };
 
-    const aulasFiltradas = aulas.filter(aula =>
-        (aula.codigo?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
-        (aula.nombre?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
-        (aula.ubicacion?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase())
-    );
+    // CORRECCIÓN 2: El filtro ahora busca por 'codigo' (el campo real de la BD)
+    // También he añadido soporte por si 'nombre' viene como 'nombre_aula'
+    const aulasFiltradas = aulas.filter(aula => {
+        const codigo = aula.codigo || aula.codigo_a || ''; // Busca codigo o codigo_a
+        const nombre = aula.nombre || aula.nombre_aula || '';
+        const ubicacion = aula.ubicacion || aula.pabellon?.nombre_pabellon || '';
+
+        return (
+            codigo.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            nombre.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            ubicacion.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        );
+    });
 
     if (loading) return <div className="loading-state">Cargando gestión de aulas...</div>;
 
@@ -145,11 +149,20 @@ function GestionAulas() {
                         <tbody>
                             {aulasFiltradas.map((aula) => (
                                 <tr key={aula.aula_id}>
-                                    <td>{aula.codigo}</td>
-                                    <td>{aula.nombre}</td>
+                                    {/* CORRECCIÓN 3: Aquí mostramos 'codigo'. Si por alguna razón tu backend cambia, usamos 'codigo_a' como respaldo */}
+                                    <td>{aula.codigo || aula.codigo_a}</td>
+                                    
+                                    {/* Soporte dual para nombre (nombre o nombre_aula) */}
+                                    <td>{aula.nombre || aula.nombre_aula}</td>
+                                    
                                     <td>{aula.capacidad}</td>
-                                    <td>{aula.tipo}</td>
-                                    <td>{aula.ubicacion}</td>
+                                    
+                                    {/* Soporte dual para tipo (string directo o objeto) */}
+                                    <td>{aula.tipo || aula.tipo_aula?.tipo_nombre || 'N/A'}</td>
+                                    
+                                    {/* Soporte dual para ubicación (string directo o objeto pabellon) */}
+                                    <td>{aula.ubicacion || aula.pabellon?.nombre_pabellon || 'N/A'}</td>
+                                    
                                     <td><span className={getEstadoClass(aula.estado)}>{aula.estado}</span></td>
                                     <td className="action-buttons">
                                         <button className="btn-icon btn-edit" onClick={() => handleOpenModal(aula)}><Edit size={16} /></button>
