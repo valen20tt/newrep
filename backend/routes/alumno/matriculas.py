@@ -228,7 +228,7 @@ def matricular_alumno():
             cur.execute("""
                 SELECT c.curso_id
                 FROM calificaciones cal
-                JOIN asignaciones a ON cal.asignacion_id = a.asignacion_id
+                JOIN asignaciones AS a ON cal.asignacion_id = a.asignacion_id
                 JOIN curso c ON a.curso_id = c.curso_id
                 WHERE cal.estudiante_id = %s AND cal.nota_final >= 11
             """, (estudiante_id,))

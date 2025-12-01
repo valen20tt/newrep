@@ -7,7 +7,7 @@ export default function EliminarAsignaciones() {
   const [asignaciones, setAsignaciones] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [docentes, setDocentes] = useState([]);
-  const [horarios, setHorarios] = useState([]);
+  // ELIMINADO: const [horarios, setHorarios] = useState([]); (Ya no se usa)
   const [aulas, setAulas] = useState([]);
   const [secciones, setSecciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +23,12 @@ export default function EliminarAsignaciones() {
 
   const cargarDatos = async () => {
     try {
-      const [asigRes, docRes, cursoRes, horarioRes, aulaRes, seccionRes] =
+      // ELIMINADO: fetch horarios
+      const [asigRes, docRes, cursoRes, aulaRes, seccionRes] =
         await Promise.all([
           fetch(`${API_BASE}/listar-asignaciones`),
           fetch(`${API_BASE}/docentes`),
           fetch(`${API_BASE}/cursos`),
-          fetch(`${API_BASE}/horarios`),
           fetch(`${API_BASE}/aulas`),
           fetch(`${API_BASE}/secciones`),
         ]);
@@ -37,7 +37,6 @@ export default function EliminarAsignaciones() {
         !asigRes.ok ||
         !docRes.ok ||
         !cursoRes.ok ||
-        !horarioRes.ok ||
         !aulaRes.ok ||
         !seccionRes.ok
       ) {
@@ -48,14 +47,12 @@ export default function EliminarAsignaciones() {
         asignacionesData,
         docentesData,
         cursosData,
-        horariosData,
         aulasData,
         seccionesData,
       ] = await Promise.all([
         asigRes.json(),
         docRes.json(),
         cursoRes.json(),
-        horarioRes.json(),
         aulaRes.json(),
         seccionRes.json(),
       ]);
@@ -63,7 +60,6 @@ export default function EliminarAsignaciones() {
       setAsignaciones(asignacionesData || []);
       setDocentes(docentesData || []);
       setCursos(cursosData || []);
-      setHorarios(horariosData || []);
       setAulas(aulasData || []);
       setSecciones(seccionesData || []);
       setLoading(false);
@@ -146,11 +142,7 @@ export default function EliminarAsignaciones() {
     return seccion ? `${seccion.codigo} - ${seccion.periodo}` : "N/A";
   };
 
-  const getHorario = (bloqueId) => {
-    if (!bloqueId) return "N/A";
-    const horario = horarios.find((h) => h.bloque_id === bloqueId);
-    return horario ? horario.descripcion : "N/A";
-  };
+  // ELIMINADO: getHorario (ya no se usa, leemos directo de asig)
 
   const getAula = (aulaId) => {
     if (!aulaId) return "N/A";
@@ -186,15 +178,14 @@ export default function EliminarAsignaciones() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>CÓDIGO</th>
+                <th>ID</th>
+                <th>TIPO</th>
                 <th>CURSO</th>
                 <th>SECCIÓN</th>
                 <th>DOCENTE</th>
                 <th>ESTUDIANTES</th>
-                <th>HORARIO 1</th>
-                <th>AULA 1</th>
-                <th>HORARIO 2</th>
-                <th>AULA 2</th>
+                <th>HORARIO</th>
+                <th>AULA</th>
                 <th>ESTADO</th>
                 <th>ACCIONES</th>
               </tr>
@@ -203,21 +194,41 @@ export default function EliminarAsignaciones() {
               {asignaciones.map((asig) => (
                 <tr key={asig.asignacion_id}>
                   <td>{asig.asignacion_id}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        asig.tipo === "TEORICO"
+                          ? "badge-primary" // Asume que tienes este estilo o usa uno azul
+                          : "badge-warning" // O un estilo para práctico
+                      }`}
+                      style={{
+                        backgroundColor:
+                          asig.tipo === "TEORICO" ? "#dbeafe" : "#ffedd5",
+                        color: asig.tipo === "TEORICO" ? "#1e40af" : "#9a3412",
+                      }}
+                    >
+                      {asig.tipo}
+                    </span>
+                  </td>
                   <td>{getNombreCurso(asig.curso_id)}</td>
                   <td>{getSeccion(asig.seccion_id)}</td>
                   <td>{getNombreDocente(asig.docente_id)}</td>
                   <td className="text-center">{asig.cantidad_estudiantes}</td>
-                  <td>{getHorario(asig.bloque_id)}</td>
+                  
+                  {/* AQUÍ ESTABA EL ERROR: Usamos los campos directos */}
+                  <td>
+                    {asig.dia} {asig.hora_inicio} - {asig.hora_fin}
+                  </td>
+                  
                   <td>{getAula(asig.aula_id)}</td>
-                  <td>{getHorario(asig.bloque_id_2)}</td>
-                  <td>{getAula(asig.aula_id_2)}</td>
+                  
                   <td>
                     <span
                       className={`badge ${
                         asig.observaciones ? "badge-warning" : "badge-success"
                       }`}
                     >
-                      {asig.observaciones ? "CON OBSERVACIONES" : "ACTIVO"}
+                      {asig.observaciones ? "OBS" : "ACTIVO"}
                     </span>
                   </td>
                   <td className="actions-cell">
@@ -277,27 +288,33 @@ export default function EliminarAsignaciones() {
 
             <div className="delete-info">
               <div className="info-row">
+                <span className="info-label">Tipo:</span>
+                <span className="info-value font-bold">{asignacionEliminar.tipo}</span>
+              </div>
+              <div className="info-row">
                 <span className="info-label">Curso:</span>
-                <span className="info-value">{getNombreCurso(asignacionEliminar.curso_id)}</span>
+                <span className="info-value">
+                  {getNombreCurso(asignacionEliminar.curso_id)}
+                </span>
               </div>
               <div className="info-row">
                 <span className="info-label">Docente:</span>
-                <span className="info-value">{getNombreDocente(asignacionEliminar.docente_id)}</span>
+                <span className="info-value">
+                  {getNombreDocente(asignacionEliminar.docente_id)}
+                </span>
               </div>
               <div className="info-row">
                 <span className="info-label">Sección:</span>
-                <span className="info-value">{getSeccion(asignacionEliminar.seccion_id)}</span>
+                <span className="info-value">
+                  {getSeccion(asignacionEliminar.seccion_id)}
+                </span>
               </div>
               <div className="info-row">
-                <span className="info-label">Horario 1:</span>
-                <span className="info-value">{getHorario(asignacionEliminar.bloque_id)}</span>
+                <span className="info-label">Horario:</span>
+                <span className="info-value">
+                  {asignacionEliminar.dia} {asignacionEliminar.hora_inicio} - {asignacionEliminar.hora_fin}
+                </span>
               </div>
-              {asignacionEliminar.bloque_id_2 && (
-                <div className="info-row">
-                  <span className="info-label">Horario 2:</span>
-                  <span className="info-value">{getHorario(asignacionEliminar.bloque_id_2)}</span>
-                </div>
-              )}
             </div>
 
             <div className="modal-actions">
@@ -314,18 +331,43 @@ export default function EliminarAsignaciones() {
 
       {/* MODAL DE VERIFICACIÓN */}
       {mostrarModalVerificacion && (
-        <div className="modal-overlay-verificacion" onClick={cerrarModalVerificacion}>
+        <div
+          className="modal-overlay-verificacion"
+          onClick={cerrarModalVerificacion}
+        >
           <div
-            className={`modal-verificacion ${mensajeTipo === "success" ? "modal-success" : "modal-error"}`}
+            className={`modal-verificacion ${
+              mensajeTipo === "success" ? "modal-success" : "modal-error"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`icon-verificacion ${mensajeTipo === "success" ? "icon-success" : "icon-error"}`}>
+            <div
+              className={`icon-verificacion ${
+                mensajeTipo === "success" ? "icon-success" : "icon-error"
+              }`}
+            >
               {mensajeTipo === "success" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -337,7 +379,9 @@ export default function EliminarAsignaciones() {
             <p className="mensaje-verificacion">{mensaje}</p>
             <button
               onClick={cerrarModalVerificacion}
-              className={`btn-verificacion ${mensajeTipo === "success" ? "btn-success" : "btn-error"}`}
+              className={`btn-verificacion ${
+                mensajeTipo === "success" ? "btn-success" : "btn-error"
+              }`}
             >
               {mensajeTipo === "success" ? "CONTINUE" : "AGAIN"}
             </button>
