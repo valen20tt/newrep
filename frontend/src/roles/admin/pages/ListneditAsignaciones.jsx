@@ -13,6 +13,7 @@ export default function ListneditAsignaciones() {
   const [loading, setLoading] = useState(true);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [asignacionEditando, setAsignacionEditando] = useState(null);
+  const [mostrarModalVerificacion, setMostrarModalVerificacion] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [mensajeTipo, setMensajeTipo] = useState("");
 
@@ -24,6 +25,8 @@ export default function ListneditAsignaciones() {
     observaciones: "",
     horario_id: "",
     aula_id: "",
+    horario_id_2: "",
+    aula_id_2: "",
   });
 
   useEffect(() => {
@@ -80,6 +83,7 @@ export default function ListneditAsignaciones() {
       console.error("Error al cargar datos:", error);
       setMensaje("Error al conectar con el backend");
       setMensajeTipo("error");
+      setMostrarModalVerificacion(true);
       setLoading(false);
     }
   };
@@ -94,6 +98,8 @@ export default function ListneditAsignaciones() {
       observaciones: asignacion.observaciones || "",
       horario_id: asignacion.bloque_id,
       aula_id: asignacion.aula_id,
+      horario_id_2: asignacion.bloque_id_2 || "",
+      aula_id_2: asignacion.aula_id_2 || "",
     });
     setMostrarModal(true);
   };
@@ -109,6 +115,8 @@ export default function ListneditAsignaciones() {
       observaciones: "",
       horario_id: "",
       aula_id: "",
+      horario_id_2: "",
+      aula_id_2: "",
     });
   };
 
@@ -117,9 +125,7 @@ export default function ListneditAsignaciones() {
     setFormEdit((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmitEdit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmitEdit = async () => {
     try {
       const res = await fetch(
         `${API_BASE}/editar-asignacion/${asignacionEditando}`,
@@ -135,23 +141,27 @@ export default function ListneditAsignaciones() {
       if (!res.ok) {
         setMensaje(data.error || "Error al actualizar la asignación");
         setMensajeTipo("error");
+        setMostrarModalVerificacion(true);
         return;
       }
 
-      setMensaje("✅ Asignación actualizada correctamente");
+      setMensaje("Asignación actualizada correctamente");
       setMensajeTipo("success");
+      setMostrarModalVerificacion(true);
       cerrarModal();
       cargarDatos();
-
-      setTimeout(() => {
-        setMensaje("");
-        setMensajeTipo("");
-      }, 3000);
     } catch (err) {
       console.error(err);
       setMensaje("Error de conexión con el servidor");
       setMensajeTipo("error");
+      setMostrarModalVerificacion(true);
     }
+  };
+
+  const cerrarModalVerificacion = () => {
+    setMostrarModalVerificacion(false);
+    setMensaje("");
+    setMensajeTipo("");
   };
 
   const getNombreCurso = (cursoId) => {
@@ -176,11 +186,13 @@ export default function ListneditAsignaciones() {
   };
 
   const getHorario = (bloqueId) => {
+    if (!bloqueId) return "N/A";
     const horario = horarios.find((h) => h.bloque_id === bloqueId);
     return horario ? horario.descripcion : "N/A";
   };
 
   const getAula = (aulaId) => {
+    if (!aulaId) return "N/A";
     const aula = aulas.find((a) => a.aula_id === aulaId);
     return aula ? `${aula.nombre} - ${aula.pabellon}` : "N/A";
   };
@@ -188,6 +200,7 @@ export default function ListneditAsignaciones() {
   if (loading) {
     return (
       <div className="loading-container">
+        <div className="loading-spinner"></div>
         <div className="loading-text">Cargando asignaciones...</div>
       </div>
     );
@@ -196,24 +209,15 @@ export default function ListneditAsignaciones() {
   return (
     <div className="asignaciones-wrapper">
       <div className="asignaciones-header">
-        <h2 className="page-title-edit">Listar y Editar Asignaciones</h2>
+        <h2 className="page-title-edit">📋 Listar y Editar Asignaciones</h2>
         <p className="page-subtitle">
           Administra las asignaciones del centro educativo
         </p>
       </div>
 
-      {mensaje && (
-        <div
-          className={`alert ${
-            mensajeTipo === "success" ? "alert-success" : "alert-error"
-          }`}
-        >
-          {mensaje}
-        </div>
-      )}
-
       {asignaciones.length === 0 ? (
         <div className="empty-state">
+          <div className="empty-icon">📚</div>
           <p>No hay asignaciones registradas</p>
         </div>
       ) : (
@@ -226,8 +230,10 @@ export default function ListneditAsignaciones() {
                 <th>SECCIÓN</th>
                 <th>DOCENTE</th>
                 <th>ESTUDIANTES</th>
-                <th>HORARIO</th>
-                <th>AULA</th>
+                <th>HORARIO 1</th>
+                <th>AULA 1</th>
+                <th>HORARIO 2</th>
+                <th>AULA 2</th>
                 <th>ESTADO</th>
                 <th>ACCIONES</th>
               </tr>
@@ -242,6 +248,8 @@ export default function ListneditAsignaciones() {
                   <td className="text-center">{asig.cantidad_estudiantes}</td>
                   <td>{getHorario(asig.bloque_id)}</td>
                   <td>{getAula(asig.aula_id)}</td>
+                  <td>{getHorario(asig.bloque_id_2)}</td>
+                  <td>{getAula(asig.aula_id_2)}</td>
                   <td>
                     <span className="badge badge-success">ACTIVO</span>
                   </td>
@@ -280,16 +288,18 @@ export default function ListneditAsignaciones() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header-edit">
-              <h3 className="modal-title-edit">Editar Asignación</h3>
+              <h3 className="modal-title-edit">✏️ Editar Asignación</h3>
               <button className="modal-close" onClick={cerrarModal}>
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleSubmitEdit} className="modal-form">
+            <div className="modal-form">
+              <div className="form-section-title">📝 Información General</div>
+              
               <div className="form-row">
                 <div className="form-field">
-                  <label>Nombre del Curso *</label>
+                  <label>Curso *</label>
                   <select
                     name="curso_id"
                     value={formEdit.curso_id}
@@ -305,36 +315,7 @@ export default function ListneditAsignaciones() {
                 </div>
 
                 <div className="form-field">
-                  <label>Capacidad *</label>
-                  <input
-                    type="number"
-                    name="estudiantes"
-                    value={formEdit.estudiantes}
-                    onChange={handleChangeEdit}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <label>Tipo de Aula *</label>
-                  <select
-                    name="aula_id"
-                    value={formEdit.aula_id}
-                    onChange={handleChangeEdit}
-                    required
-                  >
-                    {aulas.map((a) => (
-                      <option key={a.aula_id} value={a.aula_id}>
-                        {a.nombre} - {a.pabellon}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-field">
-                  <label>Pabellón *</label>
+                  <label>Sección *</label>
                   <select
                     name="seccion_id"
                     value={formEdit.seccion_id}
@@ -352,6 +333,18 @@ export default function ListneditAsignaciones() {
 
               <div className="form-row">
                 <div className="form-field">
+                  <label>Número de Estudiantes *</label>
+                  <input
+                    type="number"
+                    name="estudiantes"
+                    value={formEdit.estudiantes}
+                    onChange={handleChangeEdit}
+                    required
+                    min="1"
+                  />
+                </div>
+
+                <div className="form-field">
                   <label>Docente *</label>
                   <select
                     name="docente_id"
@@ -366,9 +359,24 @@ export default function ListneditAsignaciones() {
                     ))}
                   </select>
                 </div>
+              </div>
 
+              <div className="form-field">
+                <label>Observaciones</label>
+                <textarea
+                  name="observaciones"
+                  value={formEdit.observaciones}
+                  onChange={handleChangeEdit}
+                  rows="3"
+                  placeholder="Notas adicionales (opcional)"
+                />
+              </div>
+
+              <div className="form-section-title">🕐 Primer Bloque de Horario</div>
+
+              <div className="form-row">
                 <div className="form-field">
-                  <label>Estado *</label>
+                  <label>Horario 1 *</label>
                   <select
                     name="horario_id"
                     value={formEdit.horario_id}
@@ -378,6 +386,59 @@ export default function ListneditAsignaciones() {
                     {horarios.map((h) => (
                       <option key={h.bloque_id} value={h.bloque_id}>
                         {h.descripcion}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label>Aula 1 *</label>
+                  <select
+                    name="aula_id"
+                    value={formEdit.aula_id}
+                    onChange={handleChangeEdit}
+                    required
+                  >
+                    {aulas.map((a) => (
+                      <option key={a.aula_id} value={a.aula_id}>
+                        {a.nombre} - {a.pabellon}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-section-title">🕑 Segundo Bloque de Horario (Opcional)</div>
+
+              <div className="form-row">
+                <div className="form-field">
+                  <label>Horario 2</label>
+                  <select
+                    name="horario_id_2"
+                    value={formEdit.horario_id_2}
+                    onChange={handleChangeEdit}
+                  >
+                    <option value="">Seleccionar segundo horario (opcional)</option>
+                    {horarios.map((h) => (
+                      <option key={h.bloque_id} value={h.bloque_id}>
+                        {h.descripcion}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label>Aula 2</label>
+                  <select
+                    name="aula_id_2"
+                    value={formEdit.aula_id_2}
+                    onChange={handleChangeEdit}
+                    disabled={!formEdit.horario_id_2}
+                  >
+                    <option value="">Primero selecciona un horario</option>
+                    {aulas.map((a) => (
+                      <option key={a.aula_id} value={a.aula_id}>
+                        {a.nombre} - {a.pabellon}
                       </option>
                     ))}
                   </select>
@@ -392,11 +453,44 @@ export default function ListneditAsignaciones() {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary">
-                  Guardar Cambios
+                <button onClick={handleSubmitEdit} className="btn-primary">
+                  💾 Guardar Cambios
                 </button>
               </div>
-            </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE VERIFICACIÓN */}
+      {mostrarModalVerificacion && (
+        <div className="modal-overlay-verificacion" onClick={cerrarModalVerificacion}>
+          <div
+            className={`modal-verificacion ${mensajeTipo === "success" ? "modal-success" : "modal-error"}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={`icon-verificacion ${mensajeTipo === "success" ? "icon-success" : "icon-error"}`}>
+              {mensajeTipo === "success" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              )}
+            </div>
+            <h3 className="titulo-verificacion">
+              {mensajeTipo === "success" ? "SUCCESS" : "ERROR"}
+            </h3>
+            <p className="mensaje-verificacion">{mensaje}</p>
+            <button
+              onClick={cerrarModalVerificacion}
+              className={`btn-verificacion ${mensajeTipo === "success" ? "btn-success" : "btn-error"}`}
+            >
+              {mensajeTipo === "success" ? "CONTINUE" : "AGAIN"}
+            </button>
           </div>
         </div>
       )}
