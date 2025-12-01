@@ -384,7 +384,7 @@ function CrearAdmin() {
           </div>
 
           {/* DATOS INSTITUCIONALES */}
-          <h3>🏫 Datos Institucionales</h3>
+          <h3>🏫 Escuela Asignada </h3>
           <select
             name="escuela_id"
             value={formData.escuela_id}

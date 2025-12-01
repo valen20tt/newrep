@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: rgba(139, 0, 0, 0.75); /* Borgoña translúcido */
+  background: #7c0a02;
   backdrop-filter: blur(14px);
   border-right: 2px solid rgba(255, 255, 255, 0.15);
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
@@ -22,11 +22,11 @@
 }
 
 /* ======= BOTÓN COLAPSAR ======= */
-.collapse-btn {
+.sidebar-admin .collapse-btn {
   position: absolute;
   top: 15px;
   right: -14px;
-  background: #c62828;
+  background: #7c0a02;
   border: none;
   border-radius: 50%;
   width: 28px;
@@ -40,31 +40,32 @@
   transition: background 0.3s;
   z-index: 1001;
 }
-.collapse-btn:hover {
-  background: #e53935;
+
+.sidebar-admin .collapse-btn:hover {
+  background: #5c0701;
 }
 
 /* ======= HEADER ======= */
-.sidebar-header {
+.sidebar-admin .sidebar-header {
   text-align: center;
   margin-bottom: 25px;
 }
 
-.sidebar-header h2 {
+.sidebar-admin .sidebar-header h2 {
   font-size: 1.2rem;
   font-weight: 700;
   color: #fff;
   margin-bottom: 4px;
 }
 
-.sidebar-header p {
+.sidebar-admin .sidebar-header p {
   font-size: 0.85rem;
-  color: #ffd6d6;
+  color: #ffffff;
   margin: 0;
 }
 
 /* ======= USER INFO ======= */
-.user-info {
+.sidebar-admin .user-info {
   background: rgba(255, 255, 255, 0.08);
   padding: 12px 10px;
   border-radius: 12px;
@@ -72,35 +73,35 @@
   margin-bottom: 20px;
 }
 
-.user-id {
+.sidebar-admin .user-id {
   font-size: 0.8rem;
-  color: #ffbaba;
+  color: #faf1f1;
 }
 
-.user-name {
+.sidebar-admin .user-name {
   font-size: 0.95rem;
   font-weight: 600;
   color: #fff;
 }
 
 /* ======= NAVIGATION ======= */
-.sidebar-nav {
+.sidebar-admin .sidebar-nav {
   flex-grow: 1;
   overflow-y: auto;
   padding-right: 5px;
 }
 
-.sidebar-section {
+.sidebar-admin .sidebar-section {
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   color: #ffe6e6;
   margin: 18px 0 8px 10px;
-  border-left: 3px solid #ff4d4d;
+  border-left: 3px solid #f7f7f7;
   padding-left: 8px;
 }
 
-.sidebar-nav a {
+.sidebar-admin .sidebar-nav a {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -113,38 +114,38 @@
   transition: all 0.25s ease;
 }
 
-.sidebar-nav a:hover {
+.sidebar-admin .sidebar-nav a:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateX(5px);
 }
 
-.sidebar-nav a.active {
-  background: rgba(255, 77, 77, 0.25);
-  border-left: 4px solid #ff4d4d;
+.sidebar-admin .sidebar-nav a.active {
+  background: rgba(255, 255, 255, 0.24);
+  border-left: 4px solid #7c0a02;
 }
 
 /* ======= ICONOS ======= */
-.nav-icon {
+.sidebar-admin .nav-icon {
   font-size: 1.1rem;
 }
 
 /* ======= SCROLLBAR ======= */
-.sidebar-nav::-webkit-scrollbar {
+.sidebar-admin .sidebar-nav::-webkit-scrollbar {
   width: 6px;
 }
-.sidebar-nav::-webkit-scrollbar-thumb {
+.sidebar-admin .sidebar-nav::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.25);
   border-radius: 3px;
 }
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
+.sidebar-admin .sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
 }
 
 /* ======= FOOTER ======= */
-.sidebar-footer {
+.sidebar-admin .sidebar-footer {
   text-align: center;
   font-size: 0.8rem;
-  color: #ffb3b3;
+  color: #ffffff;
   margin-top: 15px;
   padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -170,7 +171,7 @@
   margin: 0 auto;
 }
 
-.sidebar-admin.collapsed a {
+.sidebar-admin.collapsed .sidebar-nav a {
   justify-content: center;
   padding: 12px 0;
 }
@@ -180,4 +181,164 @@
   .sidebar-admin {
     width: 220px;
   }
+}
+
+/* 🔵 BOTÓN DE CERRAR SESIÓN EXCLUSIVO PARA ADMIN - COLOR AZUL */
+.logout-link{
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: rgb(61, 100, 207) !important;
+  background-color: #2563eb !important;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  margin: 20px 15px 15px 15px;
+  width: calc(100% - 30px);
+  text-align: left;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.logout-link:hover {
+  background-color: #1d4ed8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+}
+
+.logout-link .nav-icon {
+  margin-right: 12px;
+  font-size: 20px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white !important;
+}
+
+.logout-link .nav-text {
+  font-weight: 600;
+  font-size: 14px;
+  color: white !important;
+}
+
+/* Cuando está colapsado */
+.sidebar-admin.collapsed .admin-logout-button .nav-text {
+  display: none;
+}
+
+.sidebar-admin.collapsed .admin-logout-button {
+  justify-content: center;
+  padding: 12px;
+  margin: 20px 10px 15px 10px;
+  width: calc(100% - 20px);
+}
+
+.sidebar-admin.collapsed .admin-logout-button .nav-icon {
+  margin-right: 0;
+}
+
+/* 🔔 ESTILOS DEL MODAL DE CONFIRMACIÓN */
+.logout-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.logout-modal {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  text-align: center;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.logout-modal-icon {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.logout-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.logout-modal-message {
+  font-size: 15px;
+  color: #6b7280;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.logout-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background-color: #d1d5db;
+}
+
+.btn-confirm {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }

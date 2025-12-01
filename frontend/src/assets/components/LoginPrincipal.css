@@ -271,13 +271,13 @@
 .estudiante-card { border: 3px solid #FF6600; } /* Anaranjado */
 .estudiante-card .icon-container { background-color: #FF6600; }
 .estudiante-card h3 { color: #FF6600; }
-.estudiante-button { background-color: #FF6600; border: 1px solid #111111; }
+.estudiante-button { background-color: #FF6600; border: 1px solid #FF6600; }
 
 /* Nueva tarjeta gris */
-.sun-card { border: 3px solid #040950; } /* Gris plomo */
-.sun-card .icon-container { background-color: #040950; }
-.sun-card h3 { color: #040950; }
-.sun-button { background-color: #040950; border: 1px solid #040950; }
+.sun-card { border: 3px solid #b45309; } /* Gris plomo */
+.sun-card .icon-container { background-color: #b45309; }
+.sun-card h3 { color: #b45309; }
+.sun-button { background-color: #b45309; border: 1px solid #b45309; }
 
 .role-button {
   width: 100%;

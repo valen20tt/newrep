@@ -1,170 +1,329 @@
-/* --- Contenedor principal --- */
+/* ================================
+   SIDEBAR SUPERADMIN - Golden Glass Style
+================================ */
 .sidebar-superadmin {
-  width: 230px;
+  width: 260px;
   height: 100vh;
-  background: linear-gradient(to bottom, #000, #0d0d0d);
-  color: #fff;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
   position: fixed;
-  left: 0;
   top: 0;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.6);
-  z-index: 1000;
-  overflow-y: auto;
-}
-
-/* --- Título principal --- */
-.sidebar-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 1.25rem;
-  color: #fff;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #333;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
-}
-
-/* --- Usuario info --- */
-.sidebar-user {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  padding: 0.5rem;
-  background-color: #111;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
-}
-
-/* --- Navegación general --- */
-.sidebar-nav {
+  left: 0;
+  padding: 20px 15px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* --- Links generales --- */
-.sidebar-link,
-.section-toggle {
-  color: #e5e7eb;
-  text-decoration: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-/* --- Hover principal (links y botones) --- */
-.sidebar-link:hover,
-.section-toggle:hover {
-  color: #fbbf24;
-  background-color: #1a1a1a;
-  transform: translateX(4px);
-  border-left: 3px solid #fbbf24;
-}
-
-/* --- Secciones (Gestión de Usuarios, Cursos, etc.) --- */
-.sidebar-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.section-toggle {
   justify-content: space-between;
-  font-weight: 500;
-  border-left: 3px solid transparent;
+  background: #b45309; /* Dorado oscuro translúcido */
+  backdrop-filter: blur(14px);
+  border-right: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  transition: all 0.3s ease-in-out;
+  z-index: 1000;
 }
 
-.section-toggle.active {
-  color: #fbbf24;
-  background-color: #141414;
-  border-left: 3px solid #fbbf24;
-}
-
-/* --- Submenú --- */
-.submenu {
+/* ======= BOTÓN COLAPSAR ======= */
+.sidebar-superadmin .collapse-btn-super {
+  position: absolute;
+  top: 15px;
+  right: -14px;
+  background: #d97706;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   display: flex;
-  flex-direction: column;
-  margin-left: 1rem;
-  margin-top: 0.25rem;
-  padding-left: 0.25rem;
-  border-left: 2px solid #333;
-  background-color: #0d0d0d;
-  border-radius: 0.25rem;
-  transition: all 0.3s ease;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  transition: background 0.3s;
+  z-index: 1001;
 }
 
-.submenu-link {
-  color: #cbd5e1;
-  text-decoration: none;
-  padding: 0.4rem 0.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
+.sidebar-superadmin .collapse-btn-super:hover {
+  background: #f59e0b;
 }
 
-.submenu-link:hover {
+/* ======= HEADER ======= */
+.sidebar-superadmin .sidebar-header-super {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.sidebar-superadmin .sidebar-title-super {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sidebar-superadmin .crown-icon {
   color: #fbbf24;
-  background-color: #1a1a1a;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+.sidebar-superadmin .title-text {
+  font-size: 1.1rem;
+}
+
+/* ======= USER INFO ======= */
+.sidebar-superadmin .user-info-super {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 12px 10px;
+  border-radius: 12px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.sidebar-superadmin .user-id-super {
+  font-size: 0.8rem;
+  color: #fef3c7;
+}
+
+.sidebar-superadmin .user-name-super {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+/* ======= NAVIGATION ======= */
+.sidebar-superadmin .sidebar-nav-super {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Links directos */
+.sidebar-superadmin .nav-item-super {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #fffbeb;
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 3px 5px;
+  transition: all 0.25s ease;
+}
+
+.sidebar-superadmin .nav-item-super:hover {
+  background: rgba(255, 255, 255, 0.15);
   transform: translateX(5px);
 }
 
-/* --- Íconos --- */
-.icon {
-  width: 18px;
-  height: 18px;
+.sidebar-superadmin .nav-item-super.active {
+  background: rgba(255, 255, 255, 0.24);
+  border-left: 4px solid #fbbf24;
 }
 
-.chevron {
+/* Secciones desplegables */
+.sidebar-superadmin .section-super {
+  margin: 3px 5px;
+}
+
+.sidebar-superadmin .section-toggle-super {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: #fffbeb;
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+}
+
+.sidebar-superadmin .section-toggle-super:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+}
+
+.sidebar-superadmin .section-toggle-super.open {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Chevron (flechita) */
+.sidebar-superadmin .chevron-super {
   margin-left: auto;
-  transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease;
 }
 
-/* --- Scrollbar elegante (si hay overflow) --- */
-.sidebar-superadmin::-webkit-scrollbar {
+/* Submenú */
+.sidebar-superadmin .submenu-super {
+  margin-top: 5px;
+  padding-left: 15px;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  margin-left: 20px;
+}
+
+.sidebar-superadmin .submenu-item-super {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #fef3c7;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin: 2px 0;
+  transition: all 0.2s ease;
+}
+
+.sidebar-superadmin .submenu-item-super:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(3px);
+}
+
+.sidebar-superadmin .submenu-item-super.active {
+  background: rgba(255, 255, 255, 0.18);
+  border-left: 3px solid #fbbf24;
+}
+
+/* ======= ICONOS EMOJI ======= */
+.sidebar-superadmin .emoji-icon-super {
+  font-size: 1.2rem;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-superadmin .submenu-icon-super {
+  font-size: 1rem;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-superadmin .nav-text-super,
+.sidebar-superadmin .submenu-text-super {
+  flex: 1;
+}
+
+/* ======= SCROLLBAR ======= */
+.sidebar-superadmin .sidebar-nav-super::-webkit-scrollbar {
   width: 6px;
 }
-.sidebar-superadmin::-webkit-scrollbar-thumb {
-  background-color: #333;
+
+.sidebar-superadmin .sidebar-nav-super::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 3px;
 }
-.sidebar-superadmin::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
+
+.sidebar-superadmin .sidebar-nav-super::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
-/* Botón de cerrar sesión */
-.logout-button {
-  margin-top: auto;
-  background-color: #dc2626;
+/* ======= FOOTER ======= */
+.sidebar-superadmin .sidebar-footer-super {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 👑 BOTÓN DE CERRAR SESIÓN EXCLUSIVO PARA SUPERADMIN */
+.superadmin-logout-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
   color: white;
+  background-color: #dc2626;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
+  margin: 15px;
+  width: calc(100% - 30px);
   text-align: left;
-  width: 100%;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
-.logout-button:hover {
+.superadmin-logout-button:hover {
   background-color: #b91c1c;
-  transform: translateX(5px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
 }
 
-/* Asegúrate de que el nav tenga display flex para que el margin-top: auto funcione */
-.sidebar-nav {
+.superadmin-logout-button .nav-icon-super {
+  font-size: 20px;
+  min-width: 24px;
   display: flex;
-  flex-direction: column;
-  height: calc(100% - 100px);
+  align-items: center;
+  justify-content: center;
+}
+
+/* ======= MODO COLAPSADO ======= */
+.sidebar-superadmin.collapsed {
+  width: 80px;
+  padding: 15px 10px;
+}
+
+.sidebar-superadmin.collapsed .sidebar-title-super .title-text,
+.sidebar-superadmin.collapsed .user-info-super,
+.sidebar-superadmin.collapsed .nav-text-super,
+.sidebar-superadmin.collapsed .submenu-text-super,
+.sidebar-superadmin.collapsed .chevron-super,
+.sidebar-superadmin.collapsed .submenu-super {
+  display: none;
+}
+
+.sidebar-superadmin.collapsed .sidebar-title-super {
+  justify-content: center;
+}
+
+.sidebar-superadmin.collapsed .crown-icon {
+  font-size: 1.8rem;
+}
+
+.sidebar-superadmin.collapsed .emoji-icon-super {
+  font-size: 1.5rem;
+  margin: 0 auto;
+}
+
+.sidebar-superadmin.collapsed .nav-item-super,
+.sidebar-superadmin.collapsed .section-toggle-super,
+.sidebar-superadmin.collapsed .superadmin-logout-button {
+  justify-content: center;
+  padding: 12px 0;
+  gap: 0;
+}
+
+.sidebar-superadmin.collapsed .superadmin-logout-button {
+  margin: 15px 10px;
+  width: calc(100% - 20px);
+}
+
+/* Cuando está colapsado, las secciones no se pueden abrir */
+.sidebar-superadmin.collapsed .section-toggle-super {
+  cursor: default;
+}
+
+.sidebar-superadmin.collapsed .section-toggle-super:hover {
+  transform: none;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .sidebar-superadmin {
+    width: 220px;
+  }
 }
 
 /* 🔔 ESTILOS DEL MODAL DE CONFIRMACIÓN */

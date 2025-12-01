@@ -34,7 +34,7 @@ body,
 position: relative;
 z-index: 3;
 background-color: rgba(255, 255, 255, 0.96);
-border: 2px solid #7c0a02;
+border: 2px solid #b45309;
 border-radius: 18px;
 box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 padding: 2rem;
@@ -46,7 +46,7 @@ margin-top: 58px;
 
 /* === TÍTULOS === */
 .login-aplicativo__title {
-  color: #7c0a02;
+  color: #b45309;
   font-size: 1.8rem;
   font-weight: 700;
   text-align: center;
@@ -84,14 +84,14 @@ margin-top: 58px;
 
 .login-aplicativo__input:focus {
   outline: none;
-  border-color: #7c0a02;
+  border-color: #b45309;
   box-shadow: 0 0 5px rgba(124, 10, 2, 0.3);
 }
 
 /* === BOTÓN === */
 .login-aplicativo__button {
   width: 100%;
-  background-color: #7c0a02;
+  background-color: #b45309;
   color: #fff;
   border: none;
   border-radius: 25px;
@@ -103,7 +103,7 @@ margin-top: 58px;
 }
 
 .login-aplicativo__button:hover {
-  background-color: #600701;
+  background-color: #b45309;
 }
 
 .login-aplicativo__button:disabled {
@@ -120,7 +120,7 @@ margin-top: 58px;
 }
 
 .login-aplicativo__ea {
-  color: #7c0a02;
+  color: #b45309;
   font-weight: 500;
   text-decoration: none;
 }

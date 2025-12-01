@@ -1,118 +1,333 @@
+/* ================================
+   SIDEBAR DOCENTE - Green Glass Style
+================================ */
 .sidebar-docente {
-  width: 280px;
-  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
-  color: white;
+  width: 260px;
   height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 20px 15px;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  left: 0;
-  top: 0;
-  overflow-y: auto;
+  justify-content: space-between;
+  background: #11377a; 
+  backdrop-filter: blur(14px);
+  border-right: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  transition: all 0.3s ease-in-out;
+  z-index: 1000;
 }
 
-.sidebar-header {
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-header h2 {
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.user-info {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.user-name {
-  margin: 0 0 4px 0;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.user-id {
-  margin: 0;
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 0;
-}
-
-.nav-link {
+/* ======= BOTÓN COLAPSAR ======= */
+.sidebar-docente .collapse-btn {
+  position: absolute;
+  top: 15px;
+  right: -14px;
+  background: #11377a;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
-  padding: 14px 20px;
+  justify-content: center;
+  cursor: pointer;
   color: white;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border-left: 3px solid transparent;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  transition: background 0.3s;
+  z-index: 1001;
 }
 
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-left-color: #60a5fa;
+.sidebar-docente .collapse-btn:hover {
+  background: #11377a;
 }
 
-.nav-link.active {
-  background: rgba(255, 255, 255, 0.15);
-  border-left-color: #60a5fa;
-  font-weight: 500;
-}
-
-.nav-link .icon {
-  font-size: 20px;
-  margin-right: 12px;
-  width: 24px;
+/* ======= HEADER ======= */
+.sidebar-docente .sidebar-header {
   text-align: center;
+  margin-bottom: 25px;
 }
 
-.nav-link .text {
-  font-size: 14px;
+.sidebar-docente .sidebar-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
 }
 
-.sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+.sidebar-docente .sidebar-header p {
+  font-size: 0.85rem;
+  color: #ffffff;
+  margin: 0;
 }
 
-.logout-link {
+/* ======= USER INFO ======= */
+.sidebar-docente .user-info {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 12px 10px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sidebar-docente .user-id {
+  font-size: 0.8rem;
+  color: #f1faf1;
+}
+
+.sidebar-docente .user-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* ======= NAVIGATION ======= */
+.sidebar-docente .sidebar-nav {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.sidebar-docente .nav-link {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  color: #fca5a5;
+  gap: 10px;
   text-decoration: none;
-  background: rgba(239, 68, 68, 0.1);
+  color: #fff5f5;
+  font-size: 0.95rem;
+  padding: 10px 12px;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  margin: 3px 5px;
+  transition: all 0.25s ease;
 }
 
-.logout-link:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fee2e2;
+.sidebar-docente .nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
 }
 
-/* Scrollbar personalizado */
-.sidebar-docente::-webkit-scrollbar {
+.sidebar-docente .nav-link.active {
+  background: rgba(255, 255, 255, 0.24);
+  border-left: 4px solid #2563eb;
+}
+
+/* ======= ICONOS ======= */
+.sidebar-docente .icon {
+  font-size: 1.1rem;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-docente .text {
+  flex: 1;
+}
+
+/* ======= SCROLLBAR ======= */
+.sidebar-docente .sidebar-nav::-webkit-scrollbar {
   width: 6px;
 }
 
-.sidebar-docente::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.sidebar-docente::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+.sidebar-docente .sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 3px;
 }
 
-.sidebar-docente::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.sidebar-docente .sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ======= FOOTER ======= */
+.sidebar-docente .sidebar-footer {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 🟢 BOTÓN DE CERRAR SESIÓN EXCLUSIVO PARA DOCENTE  */
+.docente-logout-button {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: white;
+  background-color: #df0909;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  margin: 15px;
+  width: calc(100% - 30px);
+  text-align: left;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.docente-logout-button:hover {
+  background-color: #801515;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.5);
+}
+
+.docente-logout-button .icon {
+  margin-right: 12px;
+  font-size: 20px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docente-logout-button .text {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ======= MODO COLAPSADO ======= */
+.sidebar-docente.collapsed {
+  width: 80px;
+  padding: 15px 10px;
+}
+
+.sidebar-docente.collapsed .sidebar-header h2,
+.sidebar-docente.collapsed .sidebar-header p,
+.sidebar-docente.collapsed .user-info,
+.sidebar-docente.collapsed .nav-link .text,
+.sidebar-docente.collapsed .docente-logout-button .text,
+.sidebar-docente.collapsed .sidebar-footer {
+  display: none;
+}
+
+.sidebar-docente.collapsed .icon {
+  font-size: 1.4rem;
+  margin: 0 auto;
+}
+
+.sidebar-docente.collapsed .nav-link,
+.sidebar-docente.collapsed .docente-logout-button {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar-docente.collapsed .docente-logout-button {
+  margin: 15px 10px;
+  width: calc(100% - 20px);
+}
+
+.sidebar-docente.collapsed .docente-logout-button .icon {
+  margin-right: 0;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .sidebar-docente {
+    width: 220px;
+  }
+}
+
+/* 🔔 ESTILOS DEL MODAL DE CONFIRMACIÓN */
+.logout-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.logout-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  text-align: center;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.logout-modal-icon {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.logout-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.logout-modal-message {
+  font-size: 15px;
+  color: #6b7280;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.logout-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background-color: #d1d5db;
+}
+
+.btn-confirm {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
