@@ -110,14 +110,15 @@ def crear_admin():
         usuario_id = cur.fetchone()[0]
 
         # === PASO 3: PERSONA ===
+        # === PASO 3: PERSONA ===
         cur.execute("""
-            INSERT INTO persona (usuario_id, direccion_id, nombres, apellidos, dni, telefono, fecha_nacimiento)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING persona_id
-        """, (
-            usuario_id, direccion_id, data["nombres"], data["apellidos"],
-            data["dni"], data["telefono"], fecha_nacimiento_obj
-        ))
+    INSERT INTO persona (usuario_id, id_direccion, nombres, apellidos, dni, telefono, fecha_nacimiento) -- 🔴 CAMBIO AQUÍ
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    RETURNING persona_id
+    """, (
+    usuario_id, direccion_id, data["nombres"], data["apellidos"],
+    data["dni"], data["telefono"], fecha_nacimiento_obj
+))
         persona_id = cur.fetchone()[0]
 
         # === PASO 4: ADMINISTRADOR ===
@@ -193,27 +194,27 @@ def listar_admins():
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-        SELECT 
-            u.usuario_id, 
-            p.nombres, p.apellidos, p.dni, p.telefono, p.fecha_nacimiento, 
-            d.direccion_detalle, dist.nombre_distrito, dist.distrito_id,
-            a.id_formacion, f.nombre_formacion AS formacion,
-            a.id_especialidad, e.nombre_especialidad AS cargo,
-            a.experiencia_lab, a.escuela_id, es.nombre_escuela AS escuela,
-            u.correo, a.estado
-        FROM usuario u
-        JOIN persona p ON u.usuario_id = p.usuario_id 
-        JOIN administrador a ON p.persona_id = a.persona_id 
-        JOIN usuario_rol ur ON u.usuario_id = ur.usuario_id
-        JOIN rol r ON ur.rol_id = r.rol_id
-        LEFT JOIN direccion d ON p.direccion_id = d.id_direccion
-        LEFT JOIN distrito dist ON d.id_distrito = dist.distrito_id 
-        LEFT JOIN formacion f ON a.id_formacion = f.id_formacion
-        LEFT JOIN especialidad e ON a.id_especialidad = e.id_especialidad
-        LEFT JOIN escuela es ON a.escuela_id = es.escuela_id
-        WHERE r.nombre_rol = 'Admin'
-        ORDER BY p.nombres ASC
-        """)
+SELECT 
+    u.usuario_id, 
+    p.nombres, p.apellidos, p.dni, p.telefono, p.fecha_nacimiento, 
+    d.direccion_detalle, dist.nombre_distrito, dist.distrito_id,
+    a.id_formacion, f.nombre_formacion AS formacion,
+    a.id_especialidad, e.nombre_especialidad AS cargo,
+    a.experiencia_lab, a.escuela_id, es.nombre_escuela AS escuela,
+    u.correo, a.estado
+FROM usuario u
+JOIN persona p ON u.usuario_id = p.usuario_id 
+JOIN administrador a ON p.persona_id = a.persona_id 
+JOIN usuario_rol ur ON u.usuario_id = ur.usuario_id
+JOIN rol r ON ur.rol_id = r.rol_id
+LEFT JOIN direccion d ON p.id_direccion = d.id_direccion  -- 🔴 CAMBIO AQUÍ (antes decía p.direccion_id)
+LEFT JOIN distrito dist ON d.id_distrito = dist.distrito_id 
+LEFT JOIN formacion f ON a.id_formacion = f.id_formacion
+LEFT JOIN especialidad e ON a.id_especialidad = e.id_especialidad
+LEFT JOIN escuela es ON a.escuela_id = es.escuela_id
+WHERE r.nombre_rol = 'Admin'
+ORDER BY p.nombres ASC
+""")
         admins = cur.fetchall()
         return jsonify({"admins": admins})
     except Exception as e:
@@ -284,8 +285,9 @@ def modificar_admin(usuario_id):
                 VALUES (%s, %s) RETURNING id_direccion
             """, (data.get("direccion_detalle"), data.get("distrito_id")))
             nueva_direccion = cur.fetchone()[0]
-            cur.execute("UPDATE persona SET direccion_id = %s WHERE persona_id = %s",
-                        (nueva_direccion, persona_id))
+            # En el bloque 4️⃣ ACTUALIZAR DIRECCIÓN (parte else/insert o update persona)
+            cur.execute("UPDATE persona SET id_direccion = %s WHERE persona_id = %s", 
+            (nueva_direccion, persona_id))
 
         # 5️⃣ ACTUALIZAR ADMINISTRADOR
         cur.execute("""
