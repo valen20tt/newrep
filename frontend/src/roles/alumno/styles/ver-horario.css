@@ -1,1107 +1,863 @@
 /* ============================================
-   VER HORARIO ESTUDIANTE - CSS PERSONALIZADO
+   VER HORARIO ESTUDIANTE - CSS LIMPIO NARANJA
    ============================================ */
+
+/* --- PALETA DE COLORES ---
+   - Naranja Principal: #f97316
+   - Naranja Oscuro: #ea580c
+   - Fondo Base: #fffbeb (Crema muy claro)
+   - Fondo Acento: #fff7ed (Crema claro)
+   - Contraste Texto Principal: #1e3a8a (Índigo para texto/títulos importantes)
+*/
 
 /* Container principal */
 .ver-horario-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
-  padding: 2rem;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    background: #fffbeb; /* Fondo Crema muy claro */
+    padding: 2.5rem;
+    font-family: 'Inter', system-ui, sans-serif;
 }
 
 .ver-horario-content {
-  max-width: 1400px;
-  margin: 0 auto;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
-/* Header del horario estudiante */
+/* ---------------------------------
+   1. Header
+   --------------------------------- */
 .ver-horario-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  position: relative;
-  overflow: hidden;
+    background: white;
+    border-radius: 16px;
+    /* Sombra más sutil */
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1); 
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+    border: 1px solid #ffedd5;
+    position: relative;
+    overflow: hidden;
 }
 
 .ver-horario-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, #ea580c, #f97316, #fb923c);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    /* Línea de acento naranja */
+    background: linear-gradient(90deg, #ea580c, #f97316); 
+    border-radius: 16px 16px 0 0;
 }
 
 .header-content-estudiante {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
 }
 
 .header-title-estudiante h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin: 0;
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 2px 4px rgba(234, 88, 12, 0.1);
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin: 0;
+    /* Naranja degradado para el título */
+    background: linear-gradient(135deg, #ea580c, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
 }
 
 .header-title-estudiante p {
-  color: #fb923c;
-  margin: 0.5rem 0 0 0;
-  font-size: 1.1rem;
-  font-weight: 500;
+    color: #92400e; /* Marrón oscuro para el subtítulo */
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .header-buttons-estudiante {
-  display: flex;
-  gap: 0.75rem;
-  background: rgba(254, 215, 170, 0.3);
-  padding: 0.5rem;
-  border-radius: 16px;
+    display: flex;
+    gap: 0.5rem;
+    background: #ffedd5; /* Fondo de acento claro */
+    padding: 0.5rem;
+    border-radius: 12px;
 }
 
 .btn-vista-estudiante {
-  padding: 0.875rem 1.75rem;
-  border-radius: 12px;
-  font-weight: 700;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  color: #ea580c;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-vista-estudiante::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s;
-}
-
-.btn-vista-estudiante:hover::before {
-  left: 100%;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: transparent;
+    color: #ea580c;
+    box-shadow: none;
 }
 
 .btn-vista-estudiante:hover {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: #f97316;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+    background: #fef3c7; /* Crema muy claro en hover */
+    color: #c2410c;
 }
 
 .btn-vista-estudiante.active {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  color: white;
-  border-color: #ea580c;
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
-  transform: translateY(-2px);
+    background: linear-gradient(135deg, #f97316, #ea580c); /* Naranja fuerte como activo */
+    color: white;
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+    transform: translateY(-1px);
 }
 
-/* Vista Calendario Estudiante */
+
+/* ---------------------------------
+   2. Vista Calendario
+   --------------------------------- */
 .calendario-estudiante-wrapper {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
-  overflow: hidden;
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  margin-bottom: 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1);
+    overflow: hidden;
+    border: 1px solid #ffedd5;
+    margin-bottom: 2.5rem;
 }
 
 .calendario-estudiante-scroll {
-  overflow-x: auto;
-  padding: 1rem;
+    overflow-x: auto;
+    padding: 1rem;
 }
 
 .calendario-estudiante-grid {
-  min-width: 1000px;
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    min-width: 1200px;
+    background: white;
+    border-radius: 12px;
 }
 
-/* Header del grid estudiante */
+/* Header del grid */
 .grid-header-estudiante {
-  display: grid;
-  grid-template-columns: 120px repeat(6, 1fr);
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  border-bottom: 3px solid #fed7aa;
+    display: grid;
+    grid-template-columns: 100px repeat(6, 1fr);
+    background: #fff7ed; /* Crema claro */
+    border-bottom: 2px solid #fed7aa;
 }
 
 .hora-header-estudiante {
-  padding: 1.5rem 1rem;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #ea580c;
-  text-align: center;
-  background: #fff7ed;
-  border-right: 2px solid #fed7aa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    padding: 1rem 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ea580c;
+    text-align: center;
+    background: #ffedd5; 
+    border-right: 1px solid #fed7aa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .dia-header-estudiante {
-  padding: 1.5rem 1rem;
-  text-align: center;
-  border-right: 2px solid #fed7aa;
-  background: white;
-  transition: all 0.3s ease;
+    padding: 1rem 1rem;
+    text-align: center;
+    border-right: 1px solid #fed7aa;
+    background: #fff7ed;
+    transition: background 0.2s;
 }
 
 .dia-header-estudiante:hover {
-  background: #fffbeb;
-  transform: translateY(-2px);
+    background: #ffedd5;
 }
 
 .dia-header-estudiante:last-child {
-  border-right: none;
+    border-right: none;
 }
 
 .dia-nombre-estudiante {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #c2410c;
-  margin-bottom: 0.75rem;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #c2410c;
+    margin-bottom: 0.5rem;
 }
 
 .dia-count-estudiante {
-  font-size: 0.9rem;
-  color: #f97316;
-  font-weight: 700;
-  background: #ffedd5;
-  padding: 0.5rem 1rem;
-  border-radius: 25px;
-  display: inline-block;
-  border: 2px solid #fed7aa;
+    font-size: 0.85rem;
+    color: #f97316; 
+    font-weight: 600;
+    background: #ffedd5;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid #fed7aa;
+    display: inline-block;
 }
 
-/* Body del grid estudiante */
+/* Body del grid */
 .grid-body-estudiante {
-  display: grid;
-  grid-template-columns: 120px repeat(6, 1fr);
-  position: relative;
-  background: #fff7ed;
+    display: grid;
+    grid-template-columns: 100px repeat(6, 1fr);
+    position: relative;
+    background: white;
 }
 
 .hora-column-estudiante {
-  border-right: 2px solid #fed7aa;
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+    border-right: 1px solid #fed7aa;
+    background: #fffbeb;
 }
 
 .hora-cell-estudiante {
-  height: 100px;
-  padding: 1rem;
-  font-size: 1rem;
-  color: #ea580c;
-  font-weight: 700;
-  border-bottom: 2px solid #fed7aa;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  background: white;
-  transition: all 0.3s ease;
-}
-
-.hora-cell-estudiante:hover {
-  background: #fffbeb;
-  color: #c2410c;
+    height: 100px;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    color: #92400e;
+    font-weight: 500;
+    border-bottom: 1px dashed #fed7aa;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: white; /* Mejorado: Eliminado fondo crema para más limpieza */
 }
 
 .dia-column-estudiante {
-  position: relative;
-  border-right: 2px solid #fed7aa;
-  background: white;
+    position: relative;
+    border-right: 1px solid #fed7aa;
+    background: white;
 }
 
 .dia-column-estudiante:last-child {
-  border-right: none;
+    border-right: none;
 }
 
 .hora-slot-estudiante {
-  height: 100px;
-  border-bottom: 2px solid #fed7aa;
-  transition: all 0.3s ease;
+    height: 100px;
+    border-bottom: 1px dashed #fed7aa;
+    transition: background-color 0.2s;
 }
 
 .hora-slot-estudiante:hover {
-  background: #fffbeb;
+    background: #fffbeb;
 }
 
-/* Bloques de clases estudiante */
+/* Bloques de clases (Mejorado) */
 .clase-block-estudiante {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.2);
-  min-height: 70px;
-  border: 3px solid transparent;
-  background: linear-gradient(135deg, #ea580c, #f97316);
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 10px rgba(249, 115, 22, 0.2); /* Sombra más suave por defecto */
+    min-height: 60px;
+    border: 2px solid transparent;
+    z-index: 5;
+    background: linear-gradient(135deg, #f97316, #fb923c); /* Default Naranja */
 }
 
 .clase-block-estudiante:hover {
-  box-shadow: 0 12px 40px rgba(234, 88, 12, 0.4);
-  transform: translateY(-6px) scale(1.03);
-  z-index: 10;
-  border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 6px 15px rgba(249, 115, 22, 0.3); /* Sombra más suave y dispersa */
+    transform: translateY(-3px) scale(1.01); /* Movimiento y escala sutil */
+    z-index: 10;
+    border-color: white;
 }
 
 .clase-content-estudiante {
-  padding: 1rem;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: white;
-  font-size: 0.85rem;
-  position: relative;
-  z-index: 2;
-}
-
-.clase-content-estudiante::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-  z-index: -1;
+    padding: 0.75rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Alineado arriba */
+    color: white;
+    font-size: 0.8rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); /* Sombra más fuerte para contraste */
 }
 
 .clase-titulo-estudiante {
-  font-weight: 900;
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  font-size: 0.9rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    font-weight: 900; /* Más peso */
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 1.1rem; /* Un poco más grande */
+    margin-bottom: 0.5rem;
 }
 
-.clase-block-estudiante:hover .clase-titulo-estudiante {
-  -webkit-line-clamp: unset;
-  white-space: normal;
+.clase-meta-estudiante {
+    margin-top: auto; /* Empuja los detalles a la parte inferior */
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 
 .clase-hora-estudiante {
-  margin-top: 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  display: inline-block;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: transparent; /* Transparente para un look limpio */
+    border: 1px solid rgba(255, 255, 255, 0.5); /* Borde blanco sutil */
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    display: inline-block;
+    backdrop-filter: blur(5px);
+    align-self: flex-start; /* Se ajusta al contenido */
 }
 
 .clase-detalles-estudiante {
-  margin-top: 1rem;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  opacity: 0.95;
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    opacity: 0.9;
 }
 
-/* Variantes de color para clases */
-.clase-block-estudiante.color-1 {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-}
+/* Variantes de color de clases (Colores más apagados pero distintivos) */
+.clase-block-estudiante.color-1 { background: linear-gradient(135deg, #f97316, #ea580c); } /* Naranja */
+.clase-block-estudiante.color-2 { background: linear-gradient(135deg, #10b981, #34d399); } /* Verde */
+.clase-block-estudiante.color-3 { background: linear-gradient(135deg, #3b82f6, #60a5fa); } /* Azul */
+.clase-block-estudiante.color-4 { background: linear-gradient(135deg, #8b5cf6, #a78bfa); } /* Púrpura */
+.clase-block-estudiante.color-5 { background: linear-gradient(135deg, #ef4444, #f87171); } /* Rojo */
+.clase-block-estudiante.color-6 { background: linear-gradient(135deg, #eab308, #facc15); } /* Amarillo */
 
-.clase-block-estudiante.color-2 {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-}
 
-.clase-block-estudiante.color-3 {
-  background: linear-gradient(135deg, #f97316, #fb923c);
-}
-
-.clase-block-estudiante.color-4 {
-  background: linear-gradient(135deg, #eab308, #facc15);
-}
-
-.clase-block-estudiante.color-5 {
-  background: linear-gradient(135deg, #fb923c, #fdba74);
-}
-
-.clase-block-estudiante.color-6 {
-  background: linear-gradient(135deg, #c2410c, #ea580c);
-}
-
-/* Vista Lista Estudiante */
+/* ---------------------------------
+   3. Vista Lista
+   --------------------------------- */
 .lista-container-estudiante {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
 }
 
 .lista-dia-estudiante {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
-  overflow: hidden;
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  transition: all 0.3s ease;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1);
+    overflow: hidden;
+    border: 1px solid #ffedd5;
+    transition: all 0.3s ease;
 }
 
 .lista-dia-estudiante:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(249, 115, 22, 0.25);
+    transform: translateY(-4px);
+    box-shadow: 0 15px 45px rgba(249, 115, 22, 0.2);
 }
 
 .lista-dia-header-estudiante {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  color: white;
-  padding: 1.5rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.lista-dia-header-estudiante::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-  animation: shine 3s infinite;
-}
-
-@keyframes shine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+    background: linear-gradient(90deg, #ea580c, #f97316); /* Naranja Principal */
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .lista-dia-header-estudiante h3 {
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin: 0;
-  position: relative;
-  z-index: 2;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
 }
 
 .lista-badge-estudiante {
-  background: rgba(255, 255, 255, 0.25);
-  padding: 0.75rem 1.25rem;
-  border-radius: 25px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  z-index: 2;
+    background: rgba(255, 255, 255, 0.3); 
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .lista-clases-estudiante {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .lista-clase-item-estudiante {
-  display: flex;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  border-radius: 16px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  position: relative;
-  overflow: hidden;
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: #fff7ed; /* Fondo de clase sutil */
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #ffedd5;
+    position: relative;
+    cursor: pointer;
 }
 
 .lista-clase-item-estudiante::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 6px;
-  height: 100%;
-  background: linear-gradient(135deg, #ea580c, #f97316);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    /* Barra lateral de acento */
+    background: #f97316;
+    border-radius: 12px 0 0 12px;
 }
 
 .lista-clase-item-estudiante:hover {
-  background: linear-gradient(135deg, #ffedd5, #fed7aa);
-  border-color: #fdba74;
-  transform: translateX(12px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.2);
+    background: #ffedd5;
+    border-color: #fed7aa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.1);
 }
 
 .lista-hora-estudiante {
-  width: 120px;
-  flex-shrink: 0;
-  text-align: center;
-  padding: 1rem;
-  background: white;
-  border-radius: 12px;
-  border: 2px solid #fed7aa;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.3s ease;
-}
-
-.lista-clase-item-estudiante:hover .lista-hora-estudiante {
-  background: #fffbeb;
-  border-color: #f97316;
-  transform: scale(1.05);
+    width: 100px;
+    flex-shrink: 0;
+    text-align: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #fed7aa;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .hora-inicio-estudiante {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #ea580c;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ea580c;
 }
 
 .hora-fin-estudiante {
-  font-size: 0.9rem;
-  color: #fb923c;
-  margin-top: 0.5rem;
-  font-weight: 700;
-}
-
-.lista-clase-info-estudiante {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+    font-size: 0.8rem;
+    color: #92400e;
+    margin-top: 0.3rem;
+    font-weight: 600;
 }
 
 .lista-clase-info-estudiante h4 {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #c2410c;
-  margin: 0 0 1rem 0;
-  line-height: 1.3;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #c2410c;
+    margin: 0 0 0.5rem 0;
 }
 
 .lista-clase-meta-estudiante {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .lista-clase-meta-estudiante span {
-  background: white;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  color: #ea580c;
-  font-weight: 600;
-  border: 2px solid #fed7aa;
-  transition: all 0.3s ease;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #ea580c;
+    font-weight: 600;
+    border: 1px solid #fed7aa;
 }
 
-.lista-clase-item-estudiante:hover .lista-clase-meta-estudiante span {
-  background: #fffbeb;
-  border-color: #f97316;
-  transform: translateY(-2px);
-}
 
-/* Estadísticas Estudiante */
+/* ---------------------------------
+   4. Estadísticas
+   --------------------------------- */
 .estadisticas-grid-estudiante {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-  margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2.5rem;
 }
 
 .estadistica-card-estudiante {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
-  padding: 2rem;
-  text-align: center;
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.estadistica-card-estudiante::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, #ea580c, #f97316, #fb923c);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.1);
+    padding: 2rem;
+    text-align: center;
+    border: 1px solid #ffedd5;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
 .estadistica-card-estudiante:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 16px 48px rgba(249, 115, 22, 0.25);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(249, 115, 22, 0.2);
+}
+
+.estadistica-card-estudiante::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    /* Gradiente de acento Naranja */
+    background: linear-gradient(90deg, #ea580c, #f97316);
+    border-radius: 16px 16px 0 0;
 }
 
 .estadistica-valor-estudiante {
-  font-size: 3.5rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  line-height: 1;
-  margin-bottom: 0.5rem;
+    font-size: 3rem;
+    font-weight: 900;
+    /* Color principal Naranja */
+    background: linear-gradient(135deg, #ea580c, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 0.5rem;
 }
 
 .estadistica-label-estudiante {
-  font-size: 1.1rem;
-  color: #fb923c;
-  font-weight: 700;
+    font-size: 1rem;
+    color: #f97316;
+    font-weight: 700;
 }
 
-/* Estados: Loading y Empty */
+
+/* ---------------------------------
+   5. Estados (Loading, Empty)
+   --------------------------------- */
 .loading-card-estudiante,
 .empty-state-estudiante {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
-  padding: 4rem 2rem;
-  text-align: center;
-  border: 1px solid rgba(251, 146, 60, 0.2);
-  position: relative;
-  overflow: hidden;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1);
+    padding: 4rem 2rem;
+    text-align: center;
+    border: 1px solid #ffedd5;
+    position: relative;
 }
 
 .loading-card-estudiante::before,
 .empty-state-estudiante::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, #ea580c, #f97316, #fb923c);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #ea580c, #f97316);
+    border-radius: 16px 16px 0 0;
 }
 
 .loading-pulse-estudiante {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
 }
 
 .loading-bar-estudiante {
-  width: 300px;
-  height: 12px;
-  background: #fed7aa;
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
+    width: 300px;
+    height: 12px;
+    background: #fed7aa;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
 }
 
 .loading-bar-estudiante::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 50%;
-  background: linear-gradient(90deg, #ea580c, #f97316);
-  animation: loading-estudiante 1.5s infinite;
-  border-radius: 10px;
-}
-
-@keyframes loading-estudiante {
-  0% { left: -50%; }
-  100% { left: 100%; }
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 50%;
+    background: linear-gradient(90deg, #f97316, #ea580c);
+    animation: loading-estudiante 1.5s infinite;
+    border-radius: 10px;
 }
 
 .loading-text-estudiante {
-  color: #ea580c;
-  font-weight: 800;
-  font-size: 1.3rem;
+    color: #ea580c;
+    font-weight: 800;
+    font-size: 1.2rem;
 }
 
 .empty-icon-estudiante {
-  font-size: 5rem;
-  margin-bottom: 2rem;
-  display: block;
+    font-size: 5rem;
+    margin-bottom: 2rem;
+    display: block;
+    color: #f97316;
 }
 
 .empty-state-estudiante p {
-  font-size: 1.5rem;
-  color: #fb923c;
-  font-weight: 700;
-  margin: 0;
+    font-size: 1.4rem;
+    color: #ea580c;
+    font-weight: 700;
+    margin: 0;
 }
 
-/* Scrollbar personalizado */
-.calendario-estudiante-scroll::-webkit-scrollbar {
-  height: 14px;
-}
+/* ---------------------------------
+   6. Modal de Detalles (Mejorado)
+   --------------------------------- */
 
-.calendario-estudiante-scroll::-webkit-scrollbar-track {
-  background: #fed7aa;
-  border-radius: 10px;
-  margin: 0 1rem;
+/* SOLUCIÓN AL SCROLL DEL MODAL */
+body.modal-open {
+    overflow: hidden;
+    padding-right: 15px; /* Compensa la barra de scroll para evitar un "salto" de contenido */
 }
+/* FIN SOLUCIÓN SCROLL */
 
-.calendario-estudiante-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  border-radius: 10px;
-  border: 2px solid #fed7aa;
-}
-
-.calendario-estudiante-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #c2410c, #ea580c);
-}
-
-/* Responsive */
-@media (max-width: 1200px) {
-  .ver-horario-container {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .ver-horario-container {
-    padding: 1rem;
-  }
-  
-  .header-content-estudiante {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .header-buttons-estudiante {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .btn-vista-estudiante {
-    flex: 1;
-    min-width: 140px;
-  }
-  
-  .estadisticas-grid-estudiante {
-    grid-template-columns: 1fr;
-  }
-  
-  .lista-clase-item-estudiante {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .lista-hora-estudiante {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-  }
-  
-  .lista-clase-meta-estudiante {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-title-estudiante h1 {
-    font-size: 2rem;
-  }
-  
-  .btn-vista-estudiante {
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-  }
-  
-  .estadistica-valor-estudiante {
-    font-size: 2.5rem;
-  }
-}
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.popup-card {
-  background: white;
-  padding: 25px;
-  width: 380px;
-  border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-  animation: popupOpen .25s ease-out;
-}
-
-.btn-cerrar-popup {
-  width: 100%;
-  background: #ff7a00;
-  padding: 10px;
-  border: none;
-  color: white;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-top: 20px;
-}
-
-@keyframes popupOpen {
-  from { transform: scale(.85); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
-}
-/* ⭐ POPUP OVERLAY */
-.popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(3px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-/* ⭐ POPUP CARD */
-.popup-card {
-  background: white;
-  padding: 25px;
-  border-radius: 14px;
-  width: 380px;
-  max-width: 90%;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-  animation: popupFade .25s ease-out;
-}
-
-@keyframes popupFade {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.btn-cerrar-popup {
-  margin-top: 15px;
-  width: 100%;
-  padding: 10px;
-  border: none;
-  background: #ff5151;
-  color: white;
-  font-weight: bold;
-  border-radius: 10px;
-  cursor: pointer;
-}
-/* =================================
-   MODAL DE DETALLES
-   ================================= */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease;
-  padding: 20px;
-}
-
-@keyframes fadeIn {
-  from {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Efecto de desvanecimiento suave */
     opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    animation: fadeIn 0.3s forwards;
 }
 
 .modal-content {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 700px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.3s ease;
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transform: translateY(-50px);
+    animation: slideIn 0.3s forwards;
+    /* Permitir scroll dentro del modal si el contenido es muy largo */
+    max-height: 90vh; 
+    overflow-y: auto;
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    to { transform: translateY(0); }
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 28px;
-  border-bottom: 2px solid #e8eef3;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px 16px 0 0;
+    /* Color principal Naranja para coherencia */
+    background: #f97316; 
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    /* Para asegurar que el header no se mueva con el scroll del contenido */
+    position: sticky; 
+    top: 0;
+    z-index: 10;
+}
+
+.modal-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: #ea580c; /* Naranja oscuro de acento */
 }
 
 .modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
 }
 
 .modal-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s, transform 0.2s;
 }
 
 .modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
+    opacity: 1;
+    transform: rotate(90deg);
 }
 
 .modal-body {
-  padding: 28px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .modal-section {
-  margin-bottom: 24px;
-}
-
-.modal-section:last-child {
-  margin-bottom: 0;
+    padding: 1rem;
+    border-radius: 10px;
+    background: #fff7ed; /* Crema claro */
+    border: 1px solid #ffedd5;
 }
 
 .modal-section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #2c3e50;
-  margin: 0 0 16px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e8eef3;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e3a8a; /* Índigo para contraste fuerte en el título de sección */
+    border-bottom: 2px solid #fed7aa;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .modal-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 600px) {
-  .modal-info-grid {
-    grid-template-columns: 1fr;
-  }
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1.5rem;
 }
 
 .modal-info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-info-item-full {
-  grid-column: 1 / -1;
+    grid-column: span 2;
 }
 
 .modal-info-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #7f8c8d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+    font-size: 0.85rem;
+    color: #92400e;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
 }
 
 .modal-info-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  padding: 10px 14px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 3px solid #667eea;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e3a8a; /* Índigo para valores de texto */
 }
 
 .modal-info-value-highlight {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: white;
-  padding: 12px 18px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  text-align: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: white;
+    background: #ea580c; /* Naranja oscuro para destacar el aula */
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+    border: 1px solid #fed7aa;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Asistencia especial */
+/* Estilos de Asistencia */
 .modal-asistencia-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 12px;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #fed7aa;
+    text-align: center;
 }
 
 .modal-asistencia-value {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #2c3e50;
-  text-align: center;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #1e3a8a;
+    margin-bottom: 0.5rem;
 }
 
 .modal-asistencia-bar {
-  width: 100%;
-  height: 16px;
-  background: #e8eef3;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 12px;
+    background: #ffedd5;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    border: 1px solid #fed7aa;
 }
 
 .modal-asistencia-bar-fill {
-  height: 100%;
-  border-radius: 20px;
-  transition: width 0.6s ease, background 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    height: 100%;
+    transition: width 0.5s ease;
+    background: linear-gradient(90deg, #10b981, #34d399); /* Verde para la barra de progreso */
 }
 
 .modal-asistencia-label {
-  text-align: center;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #7f8c8d;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e3a8a;
 }
 
+/* Footer del Modal */
 .modal-footer {
-  padding: 20px 28px;
-  border-top: 2px solid #e8eef3;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  background: #f8f9fa;
-  border-radius: 0 0 16px 16px;
+    padding: 1rem 2rem;
+    border-top: 1px solid #ffedd5;
+    text-align: right;
+    background: #fff7ed; /* Fondo crema para el footer */
 }
 
 .modal-btn-close {
-  padding: 12px 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: 2px solid #f97316;
+    background: #f97316;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
 }
 
 .modal-btn-close:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: #ea580c;
+    border-color: #ea580c;
+    box-shadow: 0 6px 15px rgba(234, 88, 12, 0.4);
 }
 
-.modal-btn-close:active {
-  transform: translateY(0);
+/* ---------------------------------
+   7. Responsive
+   --------------------------------- */
+@media (max-width: 1200px) {
+    .ver-horario-container {
+        padding: 1.5rem;
+    }
 }
 
-/* Scroll personalizado para el modal */
-.modal-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-  background: #667eea;
-  border-radius: 10px;
-}
-
-.modal-content::-webkit-scrollbar-thumb:hover {
-  background: #764ba2;
-}
-
-/* Animación de hover para clases clickeables */
-.clase-block-estudiante,
-.lista-clase-item-estudiante {
-  transition: all 0.2s ease;
-}
-
-.clase-block-estudiante:hover,
-.lista-clase-item-estudiante:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .modal-content {
-    max-width: 95%;
-    margin: 10px;
-  }
-  
-  .modal-header {
-    padding: 20px;
-  }
-  
-  .modal-header h2 {
-    font-size: 1.25rem;
-  }
-  
-  .modal-body {
-    padding: 20px;
-  }
-  
-  .modal-asistencia-value {
-    font-size: 2rem;
-  }
+    .ver-horario-container {
+        padding: 1rem;
+    }
+    
+    .header-content-estudiante {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .header-title-estudiante h1 {
+        font-size: 2rem;
+    }
+
+    .header-buttons-estudiante {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-vista-estudiante {
+        flex: 1;
+        min-width: 120px;
+        padding: 0.6rem 1rem;
+    }
+    
+    .estadisticas-grid-estudiante {
+        grid-template-columns: 1fr;
+    }
+    
+    .lista-clase-item-estudiante {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .lista-hora-estudiante {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-around;
+    }
+    
+    .modal-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-info-item-full {
+        grid-column: span 1;
+    }
 }
