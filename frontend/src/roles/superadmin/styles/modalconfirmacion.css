@@ -1,0 +1,277 @@
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Box */
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+.modal-confirmacion-amplio {
+  max-width: 650px;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Close Button */
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-btn:hover {
+  color: #1f2937;
+}
+
+/* Header */
+.modal-header-warning {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.modal-header-warning svg {
+  margin-bottom: 12px;
+}
+
+.modal-header-warning h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* Warning Message */
+.modal-warning-message {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.modal-warning-message p {
+  margin: 0;
+  color: #92400e;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.modal-warning-message strong {
+  color: #78350f;
+}
+
+/* Tabla de Afectaciones */
+.tabla-afectaciones {
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.tabla-afectaciones table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla-afectaciones thead {
+  background: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.tabla-afectaciones th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tabla-afectaciones td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.tabla-afectaciones tbody tr:hover {
+  background: #f9fafb;
+}
+
+.tabla-afectaciones tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Footer Warning */
+.modal-footer-warning {
+  background: #fee2e2;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.modal-footer-warning strong {
+  color: #991b1b;
+  font-size: 14px;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn-cancel,
+.btn-delete {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.btn-delete {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Scrollbar personalizado */
+.tabla-afectaciones::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tabla-afectaciones::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.tabla-afectaciones::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.tabla-afectaciones::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ========================================
+   BADGES PARA TIPOS DE REGISTRO
+   Agregar al final de modal-confirmacion.css
+   ======================================== */
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Badge: Asignación */
+.badge-asignacion {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Badge: Matrícula */
+.badge-matricula {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Badge: Sesión de Clase */
+.badge-sesion {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+/* Badge: Materiales */
+.badge-materiales {
+  background: #ddd6fe;
+  color: #5b21b6;
+}
+
+/* Badge: Asistencias */
+.badge-asistencias {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* Badge: Registro genérico */
+.badge-registro {
+  background: #f3f4f6;
+  color: #374151;
+}

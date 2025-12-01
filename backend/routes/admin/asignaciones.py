@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from psycopg2.extras import RealDictCursor
 from database.db import get_db
+from datetime import datetime, timedelta
 
-# ✅ Este blueprint se registrará bajo /admin (ejemplo: /admin/cursos)
 asignaciones_bp = Blueprint("asignaciones", __name__)
 
 # -----------------------------
@@ -12,16 +12,22 @@ asignaciones_bp = Blueprint("asignaciones", __name__)
 def listar_cursos():
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("""
-        SELECT curso_id, codigo, nombre, creditos, ciclo, tipo
-        FROM curso
-        WHERE estado = TRUE
-        ORDER BY nombre ASC
-    """)
-    cursos = cur.fetchall()
-    cur.close(); conn.close()
-    return jsonify(cursos)
-
+    try:
+        cur.execute("""
+            SELECT 
+                curso_id, codigo, nombre, creditos, ciclo, tipo,
+                horas_teoricas, horas_practicas
+            FROM curso
+            WHERE estado = TRUE
+            ORDER BY nombre ASC
+        """)
+        cursos = cur.fetchall()
+        return jsonify(cursos)
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener cursos: {str(e)}"}), 500
+    finally:
+        cur.close()
+        conn.close()
 
 # -----------------------------
 # LISTAR DOCENTES
@@ -34,6 +40,8 @@ def listar_docentes():
         cur.execute("""
             SELECT 
                 d.docente_id,
+                p.nombres,
+                p.apellidos,
                 (p.nombres || ' ' || p.apellidos) AS nombre_completo,
                 u.correo AS correo_docente
             FROM docente d
@@ -49,46 +57,24 @@ def listar_docentes():
         conn.close()
 
 # -----------------------------
-# LISTAR SECCIONES (A/B/C + periodo)
+# LISTAR SECCIONES
 # -----------------------------
 @asignaciones_bp.route("/secciones", methods=["GET"])
 def listar_secciones():
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("""
-        SELECT seccion_id, codigo, ciclo_academico, periodo
-        FROM secciones
-        WHERE UPPER(estado) = 'ACTIVO'
-        ORDER BY periodo DESC, codigo ASC
-    """)
-    secciones = cur.fetchall()
-    cur.close(); conn.close()
-    return jsonify(secciones)
-
-
-# -----------------------------
-# LISTAR HORARIOS (TO_CHAR para TIME)
-# -----------------------------
-@asignaciones_bp.route("/horarios", methods=["GET"])
-def listar_horarios():
-    conn = get_db()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("""
-        SELECT 
-            bloque_id,
-            codigo_bloque,
-            dia,
-            TO_CHAR(hora_inicio, 'HH24:MI') AS hora_inicio,
-            TO_CHAR(hora_fin, 'HH24:MI') AS hora_fin,
-            CONCAT(dia, ' ', TO_CHAR(hora_inicio, 'HH24:MI'), '-', TO_CHAR(hora_fin, 'HH24:MI')) AS descripcion
-        FROM bloque_horario
-        WHERE UPPER(estado) = 'ACTIVO'
-        ORDER BY dia, hora_inicio
-    """)
-    horarios = cur.fetchall()
-    cur.close(); conn.close()
-    return jsonify(horarios)
-
+    try:
+        cur.execute("""
+            SELECT seccion_id, codigo, ciclo_academico, periodo
+            FROM secciones
+            WHERE UPPER(estado) = 'ACTIVO'
+            ORDER BY periodo DESC, codigo ASC
+        """)
+        secciones = cur.fetchall()
+        return jsonify(secciones)
+    finally:
+        cur.close()
+        conn.close()
 
 # -----------------------------
 # LISTAR AULAS OPERATIVAS
@@ -97,7 +83,6 @@ def listar_horarios():
 def listar_aulas():
     conn = get_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-
     try:
         cur.execute("""
             SELECT 
@@ -120,7 +105,9 @@ def listar_aulas():
         cur.close()
         conn.close()
 
-
+# -----------------------------
+# CREAR ASIGNACIÓN
+# -----------------------------
 @asignaciones_bp.route("/crear-asignacion", methods=["POST"])
 def crear_asignacion():
     data = request.get_json() or {}
@@ -132,19 +119,20 @@ def crear_asignacion():
     cantidad_estudiantes = data.get("estudiantes")
     observaciones = data.get("observaciones", "")
 
-    # Bloque principal
-    bloque_id = data.get("horario_id")
-    aula_id = data.get("aula_id")
+    # Datos de horario TEÓRICO (Bloque 1)
+    dia_1 = data.get("dia_1")
+    hora_inicio_1 = data.get("hora_inicio_1")
+    aula_id_teorica = data.get("aula_id")
+    
+    # Datos de horario PRÁCTICO (Bloque 2)
+    dia_2 = data.get("dia_2")
+    hora_inicio_2 = data.get("hora_inicio_2")
+    aula_id_practica = data.get("aula_id_2")
 
-    # Del Bloque opcional
-    bloque_id_2 = data.get("horario_id_2")
-    aula_id_2 = data.get("aula_id_2")
-
-    # ✅ Validar campos obligatorios
-    if not all([curso_id, seccion_id, docente_id, cantidad_estudiantes, bloque_id, aula_id]):
-        return jsonify({"error": "⚠️ Faltan campos obligatorios"}), 400
-
-    # ✅ Validar estudiantes
+    # Validaciones básicas
+    if not all([curso_id, seccion_id, docente_id, cantidad_estudiantes]):
+        return jsonify({"error": "⚠️ Faltan campos obligatorios del Paso 1."}), 400
+    
     try:
         cantidad_estudiantes = int(cantidad_estudiantes)
         if cantidad_estudiantes <= 0:
@@ -152,168 +140,202 @@ def crear_asignacion():
     except:
         return jsonify({"error": "⚠️ Cantidad de estudiantes inválida."}), 400
 
-    # ✅ No permitir bloque 2 igual al bloque 1
-    if bloque_id_2 and bloque_id_2 == bloque_id:
-        return jsonify({"error": "⚠️ El segundo bloque de horario no puede ser igual al primero."}), 400
-
     conn = get_db()
     cur = conn.cursor()
 
     try:
-        # ✅ Validar sección activa
-        cur.execute("""
-            SELECT 1 FROM secciones 
-            WHERE seccion_id=%s AND UPPER(estado)='ACTIVO'
-        """, (seccion_id,))
-        if not cur.fetchone():
-            return jsonify({"error": "La sección no está activa."}), 400
+        # Obtener horas del curso
+        cur.execute(
+            "SELECT horas_teoricas, horas_practicas FROM curso WHERE curso_id = %s", 
+            (curso_id,)
+        )
+        curso_data = cur.fetchone()
+        if not curso_data:
+            return jsonify({"error": "Curso no encontrado o inválido."}), 404
+        
+        horas_teoricas = curso_data[0]
+        horas_practicas = curso_data[1]
 
-        # ✅ Validar bloque 1 activo
-        cur.execute("""
-            SELECT dia FROM bloque_horario 
-            WHERE bloque_id=%s AND UPPER(estado)='ACTIVO'
-        """, (bloque_id,))
-        bloque1 = cur.fetchone()
-        if not bloque1:
-            return jsonify({"error": "Bloque horario principal no válido."}), 400
+        # Función para calcular hora_fin (bloques de 50 minutos)
+        def calcular_hora_fin(hora_inicio, duracion_horas):
+            hora_obj = datetime.strptime(hora_inicio, "%H:%M")
+            minutos_duracion = duracion_horas * 50
+            hora_fin_obj = hora_obj + timedelta(minutes=minutos_duracion)
+            return hora_fin_obj.strftime("%H:%M")
 
-        dia_bloque_1 = bloque1[0]
+        asignaciones_a_insertar = []
 
-        # ✅ Validar bloque 2 activo (si existe)
-        dia_bloque_2 = None
-        if bloque_id_2:
-            cur.execute("""
-                SELECT dia FROM bloque_horario 
-                WHERE bloque_id=%s AND UPPER(estado)='ACTIVO'
-            """, (bloque_id_2,))
-            bloque2 = cur.fetchone()
-            if not bloque2:
-                return jsonify({"error": "Bloque horario secundario no válido."}), 400
-            dia_bloque_2 = bloque2[0]
-
-        # ✅ Validar aulas
-        def validar_aula(aula_id_validar, bloque_validar):
-            cur.execute("""
-                SELECT capacidad FROM aula 
-                WHERE aula_id=%s AND UPPER(estado)='OPERATIVO'
-            """, (aula_id_validar,))
+        # ==================== VALIDACIÓN BLOQUE TEÓRICO ====================
+        if horas_teoricas > 0:
+            if not (dia_1 and hora_inicio_1 and aula_id_teorica):
+                return jsonify({"error": f"⚠️ El curso requiere {horas_teoricas} horas teóricas. Debe asignar Día, Horario y Aula 1."}), 400
+            
+            hora_fin_1 = calcular_hora_fin(hora_inicio_1, horas_teoricas)
+            
+            # Validar capacidad del aula
+            cur.execute("SELECT capacidad FROM aula WHERE aula_id=%s AND UPPER(estado)='OPERATIVO'", (aula_id_teorica,))
             aula = cur.fetchone()
             if not aula:
-                return "Aula no operativa o inexistente"
+                return jsonify({"error": "Aula teórica no operativa o inexistente"}), 400
             if cantidad_estudiantes > aula[0]:
-                return "Capacidad insuficiente"
-            return None
+                return jsonify({"error": f"Capacidad insuficiente en aula teórica (Capacidad: {aula[0]})"}), 400
 
-        error = validar_aula(aula_id, bloque_id)
-        if error:
-            return jsonify({"error": f"Aula principal: {error}"}), 400
-
-        if bloque_id_2 and aula_id_2:
-            error = validar_aula(aula_id_2, bloque_id_2)
-            if error:
-                return jsonify({"error": f"Aula secundaria: {error}"}), 400
-
-        # ✅ Validar aula ocupada BLOQUE 1
-        cur.execute("""
-            SELECT 1 FROM asignaciones 
-            WHERE bloque_id=%s AND aula_id=%s
-        """, (bloque_id, aula_id))
-        if cur.fetchone():
-            return jsonify({"error": "El aula ya está ocupada en el bloque principal."}), 400
-
-        # ✅ Validar docente BLOQUE 1
-        cur.execute("""
-            SELECT 1 FROM asignaciones 
-            WHERE bloque_id=%s AND docente_id=%s
-        """, (bloque_id, docente_id))
-        if cur.fetchone():
-            return jsonify({"error": "El docente ya tiene una clase en el bloque principal."}), 400
-
-        # ✅ Validar duplicado en la misma sección
-        cur.execute("""
-            SELECT 1 FROM asignaciones
-            WHERE curso_id=%s 
-            AND seccion_id=%s 
-            AND bloque_id=%s
-        """, (curso_id, seccion_id, bloque_id))
-        if cur.fetchone():
-            return jsonify({
-                "error": "Este curso ya tiene una asignación registrada en esta sección y bloque."
-            }), 400
-
-        # ================================
-        # ✅ VALIDACIONES BLOQUE 2
-        # ================================
-        if bloque_id_2:
-
-            # Aula ocupada BLOQUE 2
+            # Validar conflicto de aula (overlap de horarios)
             cur.execute("""
                 SELECT 1 FROM asignaciones 
-                WHERE bloque_id=%s AND aula_id=%s
-            """, (bloque_id_2, aula_id_2))
+                WHERE dia = %s 
+                AND aula_id = %s
+                AND (
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio >= %s AND hora_fin <= %s)
+                )
+            """, (dia_1, aula_id_teorica, hora_fin_1, hora_inicio_1, hora_fin_1, hora_inicio_1, hora_inicio_1, hora_fin_1))
             if cur.fetchone():
-                return jsonify({"error": "El aula ya está ocupada en el segundo bloque."}), 400
+                return jsonify({"error": f"El aula teórica ya está ocupada el {dia_1} entre {hora_inicio_1} y {hora_fin_1}."}), 400
 
-            # Docente ocupado BLOQUE 2
+            # Validar conflicto de docente
             cur.execute("""
                 SELECT 1 FROM asignaciones 
-                WHERE bloque_id=%s AND docente_id=%s
-            """, (bloque_id_2, docente_id))
+                WHERE dia = %s 
+                AND docente_id = %s
+                AND (
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio >= %s AND hora_fin <= %s)
+                )
+            """, (dia_1, docente_id, hora_fin_1, hora_inicio_1, hora_fin_1, hora_inicio_1, hora_inicio_1, hora_fin_1))
             if cur.fetchone():
-                return jsonify({"error": "El docente ya tiene clase en el segundo bloque."}), 400
-
-            # Validar duplicado dentro de sección (bloque 2)
+                return jsonify({"error": f"El docente ya tiene una clase el {dia_1} entre {hora_inicio_1} y {hora_fin_1}."}), 400
+            
+            # Validar duplicado curso + sección en mismo horario
             cur.execute("""
                 SELECT 1 FROM asignaciones
-                WHERE curso_id=%s 
-                AND seccion_id=%s 
-                AND bloque_id=%s
-            """, (curso_id, seccion_id, bloque_id_2))
+                WHERE curso_id = %s 
+                AND seccion_id = %s 
+                AND dia = %s
+                AND hora_inicio = %s
+            """, (curso_id, seccion_id, dia_1, hora_inicio_1))
             if cur.fetchone():
-                return jsonify({
-                    "error": "Estas duplicando el registro del curso en sección con el segundo bloque."
-                }), 400
+                return jsonify({"error": "Este curso ya tiene una asignación teórica registrada en esta sección y horario."}), 400
+            
+            asignaciones_a_insertar.append({
+                'dia': dia_1,
+                'hora_inicio': hora_inicio_1,
+                'hora_fin': hora_fin_1,
+                'aula_id': aula_id_teorica,
+                'tipo': 'TEORICO'
+            })
+        else:
+            if dia_1 or hora_inicio_1:
+                return jsonify({"error": "⚠️ Este curso no tiene horas teóricas (T: 0). No debe asignar Día/Horario 1."}), 400
 
-        # ================================
-        # ✅ INSERTAR BLOQUE 1
-        # ================================
-        cur.execute("""
-            INSERT INTO asignaciones (
-                curso_id, seccion_id, docente_id, cantidad_estudiantes,
-                observaciones, bloque_id, aula_id
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            curso_id, seccion_id, docente_id, cantidad_estudiantes,
-            observaciones, bloque_id, aula_id
-        ))
+        # ==================== VALIDACIÓN BLOQUE PRÁCTICO ====================
+        if horas_practicas > 0:
+            if not (dia_2 and hora_inicio_2 and aula_id_practica):
+                return jsonify({"error": f"⚠️ El curso requiere {horas_practicas} horas prácticas. Debe asignar Día, Horario 2 y Aula 2."}), 400
+            
+            hora_fin_2 = calcular_hora_fin(hora_inicio_2, horas_practicas)
+            
+            # Validar que no sea el mismo horario que el teórico
+            if horas_teoricas > 0 and dia_1 == dia_2 and hora_inicio_1 == hora_inicio_2:
+                return jsonify({"error": "⚠️ El horario práctico no puede ser igual al horario teórico."}), 400
+            
+            # Validar capacidad del aula
+            cur.execute("SELECT capacidad FROM aula WHERE aula_id=%s AND UPPER(estado)='OPERATIVO'", (aula_id_practica,))
+            aula = cur.fetchone()
+            if not aula:
+                return jsonify({"error": "Aula práctica no operativa o inexistente"}), 400
+            if cantidad_estudiantes > aula[0]:
+                return jsonify({"error": f"Capacidad insuficiente en aula práctica (Capacidad: {aula[0]})"}), 400
 
-        # ================================
-        # ✅ INSERTAR BLOQUE 2 (OPCIONAL)
-        # ================================
-        if bloque_id_2 and aula_id_2:
+            # Validar conflicto de aula
+            cur.execute("""
+                SELECT 1 FROM asignaciones 
+                WHERE dia = %s 
+                AND aula_id = %s
+                AND (
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio >= %s AND hora_fin <= %s)
+                )
+            """, (dia_2, aula_id_practica, hora_fin_2, hora_inicio_2, hora_fin_2, hora_inicio_2, hora_inicio_2, hora_fin_2))
+            if cur.fetchone():
+                return jsonify({"error": f"El aula práctica ya está ocupada el {dia_2} entre {hora_inicio_2} y {hora_fin_2}."}), 400
+
+            # Validar conflicto de docente
+            cur.execute("""
+                SELECT 1 FROM asignaciones 
+                WHERE dia = %s 
+                AND docente_id = %s
+                AND (
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio < %s AND hora_fin > %s) OR
+                    (hora_inicio >= %s AND hora_fin <= %s)
+                )
+            """, (dia_2, docente_id, hora_fin_2, hora_inicio_2, hora_fin_2, hora_inicio_2, hora_inicio_2, hora_fin_2))
+            if cur.fetchone():
+                return jsonify({"error": f"El docente ya tiene una clase el {dia_2} entre {hora_inicio_2} y {hora_fin_2}."}), 400
+            
+            # Validar duplicado curso + sección
+            cur.execute("""
+                SELECT 1 FROM asignaciones
+                WHERE curso_id = %s 
+                AND seccion_id = %s 
+                AND dia = %s
+                AND hora_inicio = %s
+            """, (curso_id, seccion_id, dia_2, hora_inicio_2))
+            if cur.fetchone():
+                return jsonify({"error": "Este curso ya tiene una asignación práctica registrada en esta sección y horario."}), 400
+            
+            asignaciones_a_insertar.append({
+                'dia': dia_2,
+                'hora_inicio': hora_inicio_2,
+                'hora_fin': hora_fin_2,
+                'aula_id': aula_id_practica,
+                'tipo': 'PRACTICO'
+            })
+        else:
+            if dia_2 or hora_inicio_2:
+                return jsonify({"error": "⚠️ Este curso no tiene horas prácticas (P: 0). No debe asignar Día/Horario 2."}), 400
+
+        if not asignaciones_a_insertar:
+            return jsonify({"error": "⚠️ No se han proporcionado bloques válidos para la asignación."}), 400
+
+        # ==================== INSERCIÓN ====================
+        last_id = None
+        for asig in asignaciones_a_insertar:
             cur.execute("""
                 INSERT INTO asignaciones (
                     curso_id, seccion_id, docente_id, cantidad_estudiantes,
-                    observaciones, bloque_id, aula_id
+                    observaciones, dia, hora_inicio, hora_fin, aula_id, tipo
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING asignacion_id
             """, (
                 curso_id, seccion_id, docente_id, cantidad_estudiantes,
-                observaciones, bloque_id_2, aula_id_2
+                f"{observaciones} ({asig['tipo']})" if observaciones else asig['tipo'], 
+                asig['dia'], asig['hora_inicio'], asig['hora_fin'], 
+                asig['aula_id'], asig['tipo']
             ))
+            last_id = cur.fetchone()[0]
 
         conn.commit()
-        return jsonify({"mensaje": "✅ Asignación registrada exitosamente."}), 201
+        return jsonify({
+            "mensaje": f"✅ Asignación registrada exitosamente. ({len(asignaciones_a_insertar)} bloque(s) creado(s))", 
+            "asignacion_id": last_id
+        }), 201
 
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": f"Error interno: {str(e)}"}), 500
+        print(f"Error en crear-asignacion: {str(e)}")
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
     finally:
         cur.close()
         conn.close()
 
+        
 # -----------------------------
 # LISTAR ASIGNACIONES
 # -----------------------------

@@ -4,35 +4,49 @@ from database.db import get_db
 
 bloques_horarios_bp = Blueprint('bloques_horarios', __name__)
 
-# ======================================================
-# Registrar los bloques de horarios
-# ======================================================
+# Secuencia válida de horarios académicos (cada 50 minutos)
+HORARIOS_VALIDOS = [
+    "08:00", "08:50", "09:40", "10:30", "11:20", "12:10",
+    "13:00", "13:50", "14:40", "15:30", "16:20", "17:10",
+    "18:00", "18:50", "19:40", "20:30", "21:20", "22:10"
+]
 
 @bloques_horarios_bp.route("/bloques-horarios", methods=["POST"])
 def crear_bloque_horario():
+    """Crea un bloque horario automáticamente de 50 minutos"""
     data = request.json
+    
+    # Validación de datos recibidos
+    print("📥 Datos recibidos:", data)
+    
     dia = data.get("dia")
     hora_inicio = data.get("hora_inicio")
-    hora_fin = data.get("hora_fin")
 
-    if not all([dia, hora_inicio, hora_fin]):
-        return jsonify({"error": "⚠️ Todos los campos obligatorios deben estar completos."}), 400
+    # Validar campos obligatorios
+    if not dia or not hora_inicio:
+        return jsonify({"error": "⚠️ Día y hora de inicio son obligatorios."}), 400
 
-    formato = "%H:%M"
-    inicio = datetime.strptime(hora_inicio, formato)
-    fin = datetime.strptime(hora_fin, formato)
-    duracion = (fin - inicio).total_seconds() / 3600
+    # VALIDACIÓN: Hora de inicio debe pertenecer a la secuencia
+    if hora_inicio not in HORARIOS_VALIDOS:
+        return jsonify({
+            "error": f"⛔ La hora de inicio '{hora_inicio}' no es válida. Debe ser una de: {', '.join(HORARIOS_VALIDOS)}"
+        }), 400
 
-    duracion_minima = 50 / 60
-
-    if duracion < duracion_minima:
-        return jsonify({"error": "⛔ La duración mínima de un bloque es de 50 minutos."}), 400
-
-    if duracion <= 0:
-        return jsonify({"error": "⛔ La hora de fin debe ser posterior a la de inicio."}), 400
-
-    if duracion > 6:
-        return jsonify({"error": "⛔ Un bloque no puede durar más de 6 horas."}), 400
+    # Calcular automáticamente hora_fin (+50 minutos = siguiente en la secuencia)
+    try:
+        idx_inicio = HORARIOS_VALIDOS.index(hora_inicio)
+        
+        # Debe existir un horario siguiente
+        if idx_inicio >= len(HORARIOS_VALIDOS) - 1:
+            return jsonify({
+                "error": "⛔ No hay horario válido posterior para crear el bloque (última hora del día)."
+            }), 400
+        
+        hora_fin = HORARIOS_VALIDOS[idx_inicio + 1]
+        print(f"✅ Hora calculada: {hora_inicio} -> {hora_fin}")
+        
+    except ValueError:
+        return jsonify({"error": "⛔ Horario fuera de la secuencia válida."}), 400
 
     try:
         conn = get_db()
@@ -44,11 +58,15 @@ def crear_bloque_horario():
             FROM bloque_horario 
             WHERE dia = %s AND hora_inicio = %s AND hora_fin = %s;
         """, (dia, hora_inicio, hora_fin))
+        
         if cur.fetchone()[0] > 0:
-            return jsonify({"error": f"⛔ Ya existe un bloque para {dia} entre {hora_inicio} y {hora_fin}."}), 400
+            return jsonify({
+                "error": f"⛔ Ya existe un bloque para {dia} entre {hora_inicio} y {hora_fin}."
+            }), 400
 
         # Determinar turno (M/T/N)
-        turno = "M" if inicio.hour < 12 else "T" if inicio.hour < 19 else "N"
+        hora_obj = datetime.strptime(hora_inicio, "%H:%M")
+        turno = "M" if hora_obj.hour < 12 else "T" if hora_obj.hour < 19 else "N"
 
         # Obtener el último número correlativo de ese día y turno
         cur.execute("""
@@ -60,9 +78,10 @@ def crear_bloque_horario():
         """, (dia, f"{dia[:3].upper()}-{turno}%"))
 
         ultimo_codigo = cur.fetchone()
+        
         if ultimo_codigo and "-" in ultimo_codigo[0]:
             try:
-                # extraer número al final, ej. "LUN-M3" -> 3
+                # Extraer solo los números del código
                 parte_numerica = ''.join(ch for ch in ultimo_codigo[0] if ch.isdigit())
                 siguiente_num = int(parte_numerica) + 1 if parte_numerica else 1
             except:
@@ -70,8 +89,8 @@ def crear_bloque_horario():
         else:
             siguiente_num = 1
 
-        # Crear nuevo código, ej. LUN-M1
         codigo_bloque = f"{dia[:3].upper()}-{turno}{siguiente_num}"
+        print(f"📝 Código generado: {codigo_bloque}")
 
         # Insertar en BD
         cur.execute("""
@@ -80,24 +99,42 @@ def crear_bloque_horario():
             RETURNING bloque_id, codigo_bloque;
         """, (dia, hora_inicio, hora_fin, codigo_bloque))
 
-        bloque_id, codigo = cur.fetchone()
+        resultado = cur.fetchone()
+        bloque_id, codigo = resultado
         conn.commit()
 
+        print(f"✅ Bloque creado exitosamente: ID={bloque_id}, Código={codigo}")
+
+        # SOLUCIÓN: Devolver las horas como strings, no como objetos time
         return jsonify({
             "mensaje": "✅ Bloque horario registrado correctamente.",
             "bloque_id": bloque_id,
-            "codigo_bloque": codigo
+            "codigo_bloque": codigo,
+            "hora_inicio": hora_inicio,  # Ya es string
+            "hora_fin": hora_fin,        # Ya es string
+            "duracion": "50 minutos"
         }), 201
 
     except Exception as e:
         if conn:
             conn.rollback()
-        print("❌ Error al registrar bloque horario:", e)
-        return jsonify({"error": str(e)}), 500
+        print("❌ Error al registrar bloque horario:", str(e))
+        return jsonify({"error": f"Error en el servidor: {str(e)}"}), 500
 
     finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@bloques_horarios_bp.route("/bloques-horarios/horarios-validos", methods=["GET"])
+def obtener_horarios_validos():
+    """Retorna la secuencia de horarios válidos"""
+    return jsonify({
+        "horarios": HORARIOS_VALIDOS,
+        "mensaje": "Secuencia de horarios académicos (cada 50 minutos)"
+    }), 200
 
 
 # ======================================================

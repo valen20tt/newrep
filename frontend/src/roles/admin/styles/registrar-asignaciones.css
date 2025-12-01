@@ -1,54 +1,381 @@
-/* Card centrado pero desplazado a la derecha */
-.glass-card {
-  width: 100%;
-  max-width: 880px;
-  margin-top: 130px;
-  margin-left: 800px; /* <<< ESTO lo mueve a la derecha */
+/* ============================================
+   ESTILOS PARA FORMULARIO DE ASIGNACIONES
+   ============================================ */
 
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.6),
-    rgba(250, 250, 250, 0.45)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  box-shadow: 0 8px 30px rgba(12, 15, 20, 0.12);
-  padding: 1.5rem;
+/* Contenedor principal centrado */
+.page-center {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* Resto igual */
+/* Tarjeta principal con efecto glass */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.glass-card:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Formulario */
+.asignaciones-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.asignaciones-form section {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.asignaciones-form section:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Etiquetas */
+.asignaciones-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+/* Inputs y Selects */
+.asignaciones-form input,
+.asignaciones-form select,
+.asignaciones-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.asignaciones-form input:focus,
+.asignaciones-form select:focus,
+.asignaciones-form textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.asignaciones-form input:disabled,
+.asignaciones-form select:disabled,
+.asignaciones-form textarea:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.asignaciones-form input::placeholder,
+.asignaciones-form textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* Select con icono personalizado */
+.asignaciones-form select {
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+}
+
+/* Textarea */
+.asignaciones-form textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+/* Grid responsivo para campos */
 .form-column {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
 
-@media (min-width: 860px) {
-  .form-column {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
+/* Secciones de bloques (Teórico/Práctico) */
+.bloque-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.bloque-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bloque-section.activo::before {
+  opacity: 1;
+}
+
+/* Badge de estado */
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-requerido {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.badge-no-requerido {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Botón primario */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Mensajes de feedback */
+.mensaje-exito {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  background-color: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-weight: 500;
+  text-align: center;
+  animation: slideIn 0.3s ease;
+}
+
+.mensaje-error {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  font-weight: 500;
+  text-align: center;
+  animation: slideIn 0.3s ease;
+}
+
+/* Animación de entrada */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-label {
-  font-size: 0.9rem;
-  margin-bottom: 0.35rem;
+/* Campo de duración calculada */
+.duracion-calculada {
+  background-color: #f0f9ff !important;
+  border: 1px dashed #3b82f6 !important;
+  color: #1e40af !important;
   font-weight: 600;
+  text-align: center;
 }
 
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 0.65rem 0.75rem;
-  border-radius: 10px;
+/* Iconos en títulos */
+.titulo-icono {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.titulo-icono svg {
+  flex-shrink: 0;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .glass-card {
-    margin-left: 0; /* en móviles vuelve al centro */
+  .page-center {
+    padding: 1rem 0.5rem;
   }
+
+  .glass-card {
+    border-radius: 1rem !important;
+    padding: 1.5rem !important;
+  }
+
+  .form-column {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .asignaciones-form section {
+    padding: 1rem;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .asignaciones-form h3 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .badge-estado {
+    margin-left: 0 !important;
+  }
+}
+
+/* Estados hover para mejor UX */
+.asignaciones-form input:hover:not(:disabled),
+.asignaciones-form select:hover:not(:disabled),
+.asignaciones-form textarea:hover:not(:disabled) {
+  border-color: #93c5fd;
+}
+
+/* Transiciones suaves */
+* {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Mejora de accesibilidad */
+.asignaciones-form input:focus-visible,
+.asignaciones-form select:focus-visible,
+.asignaciones-form textarea:focus-visible,
+.btn-primary:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Estilos para campos requeridos */
+.asignaciones-form label::after {
+  content: "";
+}
+
+.asignaciones-form label:has(+ input[required])::after,
+.asignaciones-form label:has(+ select[required])::after,
+.asignaciones-form label:has(+ textarea[required])::after {
+  content: " *";
+  color: #ef4444;
+  font-weight: bold;
+}
+
+/* Loading state para botón */
+.btn-primary.loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-primary.loading::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estilos para tooltips (opcional) */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: #1f2937;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.75rem;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
 }

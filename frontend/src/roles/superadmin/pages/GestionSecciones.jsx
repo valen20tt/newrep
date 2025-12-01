@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 import { Search, Plus, Edit, Trash2, Layers } from "lucide-react";
-
+import ModalConfirmacion from "./Modalconfirmacion.jsx";
+import { toast } from "react-toastify";
 import ModalSeccion from "./ModalSeccion.jsx";
 import "../styles/gestion-secciones.css";
 const BASE_URL = "http://localhost:5000/superadmin/secciones";
@@ -21,12 +21,12 @@ function GestionSecciones() {
   const [seccionSeleccionada, setSeccionSeleccionada] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-
-  // ESTADOS QUE FALTABAN
   const [filtroActual, setFiltroActual] = useState("código");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [seccionAEliminar, setSeccionAEliminar] = useState(null);
+  const [detalleAfectaciones, setDetalleAfectaciones] = useState([]); // NUEVO
 
-  // Evita búsquedas excesivas
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -50,16 +50,43 @@ function GestionSecciones() {
     cargarSecciones();
   }, []);
 
-  const eliminarSeccion = async (id) => {
-    if (!window.confirm("¿Está seguro de eliminar esta sección?")) return;
+  // === MODIFICADO: Verificar afectaciones antes de mostrar modal ===
+  const solicitarEliminacion = async (id) => {
     try {
-      await axios.delete(`${BASE_URL}/${id}`);
+      // Intento eliminar sin force=true para obtener las afectaciones
+      const res = await axios.delete(`${BASE_URL}/${id}`);
+
+      // Si llega aquí, no había afectaciones, eliminar directamente
       toast.success("🗑️ Sección eliminada exitosamente.");
       cargarSecciones();
     } catch (err) {
-      const error =
-        err.response?.data?.error || "Error al eliminar la sección.";
-      toast.error(error);
+      if (
+        err.response?.status === 409 &&
+        err.response?.data?.requiere_confirmacion
+      ) {
+        // Hay asignaciones vinculadas, mostrar modal con detalles
+        setSeccionAEliminar(id);
+        setDetalleAfectaciones(err.response.data.detalle || []);
+        setMostrarConfirmacion(true);
+      } else if (err.response?.status === 404) {
+        toast.error("La sección no existe.");
+      } else {
+        toast.error("Error al eliminar la sección.");
+      }
+    }
+  };
+
+  // === MODIFICADO: Eliminar con force=true ===
+  const eliminarSeccionConFuerza = async () => {
+    try {
+      await axios.delete(`${BASE_URL}/${seccionAEliminar}?force=true`);
+      toast.success("🗑️ Sección y asignaciones eliminadas exitosamente.");
+      setMostrarConfirmacion(false);
+      setSeccionAEliminar(null);
+      setDetalleAfectaciones([]);
+      cargarSecciones();
+    } catch (err) {
+      toast.error("Error al eliminar la sección.");
     }
   };
 
@@ -96,7 +123,6 @@ function GestionSecciones() {
     return "status-tag";
   };
 
-  // 🔍 FILTRO INTELIGENTE
   const seccionesFiltradas = secciones.filter((sec) => {
     const valor = debouncedSearchTerm.toLowerCase();
 
@@ -130,7 +156,6 @@ function GestionSecciones() {
       </div>
 
       <div className="search-bar-actions">
-        {/* INPUT DE BÚSQUEDA */}
         <div className="search-input-group">
           <Search size={18} />
           <input
@@ -146,7 +171,6 @@ function GestionSecciones() {
         </button>
       </div>
 
-      {/* === TABLA === */}
       <div className="secciones-table-container">
         {seccionesFiltradas.length > 0 ? (
           <table className="secciones-table">
@@ -177,9 +201,10 @@ function GestionSecciones() {
                     >
                       <Edit size={16} />
                     </button>
+
                     <button
                       className="btn-icon btn-delete"
-                      onClick={() => eliminarSeccion(sec.seccion_id)}
+                      onClick={() => solicitarEliminacion(sec.seccion_id)}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -203,6 +228,17 @@ function GestionSecciones() {
         onSave={handleSaveSeccion}
         seccionData={seccionSeleccionada}
         initialState={SECCION_INICIAL}
+      />
+
+      {/* === MODAL DE CONFIRMACIÓN CON DETALLES === */}
+      <ModalConfirmacion
+        isOpen={mostrarConfirmacion}
+        onClose={() => {
+          setMostrarConfirmacion(false);
+          setDetalleAfectaciones([]);
+        }}
+        onConfirm={eliminarSeccionConFuerza}
+        detalleAfectaciones={detalleAfectaciones}
       />
     </div>
   );

@@ -1,43 +1,51 @@
 import { useState, useEffect } from "react";
-import "../styles/registrar-horario.css";
+import { useNavigate } from "react-router-dom";
+
+// Secuencia válida de horarios académicos (cada 50 minutos)
+const HORARIOS_VALIDOS = [
+  "08:00",
+  "08:50",
+  "09:40",
+  "10:30",
+  "11:20",
+  "12:10",
+  "13:00",
+  "13:50",
+  "14:40",
+  "15:30",
+  "16:20",
+  "17:10",
+  "18:00",
+  "18:50",
+  "19:40",
+  "20:30",
+  "21:20",
+  "22:10",
+];
 
 export default function CrearBloque() {
+  const navigate = useNavigate();
+
   const [bloque, setBloque] = useState({
     codigo_bloque: "",
     dia: "",
     hora_inicio: "",
-    hora_fin: "",
   });
 
   const [mensaje, setMensaje] = useState("");
-  const [duracion, setDuracion] = useState("");
   const [turno, setTurno] = useState("");
-  const [bloqueValido, setBloqueValido] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [bloqueRegistrado, setBloqueRegistrado] = useState(null);
-  const [errorMensaje, setErrorMensaje] = useState("");
 
-  // Obtiene el próximo código real desde el backend
-  const obtenerCodigoSugerido = async (dia, horaInicio) => {
-    if (!dia || !horaInicio) return;
+  // Calcula automáticamente la hora fin (siempre +50 minutos)
+  const calcularHoraFin = (horaInicio) => {
+    if (!horaInicio || !HORARIOS_VALIDOS.includes(horaInicio)) return "";
 
-    try {
-      const url = `http://localhost:5000/superadmin/bloques-horarios/proximo-codigo?dia=${dia}&hora_inicio=${horaInicio}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (res.ok) {
-        setBloque((prev) => ({
-          ...prev,
-          codigo_bloque: data.codigo_sugerido,
-        }));
-      }
-    } catch (e) {
-      console.error("Error al obtener código sugerido:", e);
+    const idx = HORARIOS_VALIDOS.indexOf(horaInicio);
+    // Si existe el siguiente horario en la secuencia
+    if (idx < HORARIOS_VALIDOS.length - 1) {
+      return HORARIOS_VALIDOS[idx + 1];
     }
+    return ""; // No hay horario siguiente válido
   };
 
   // Mapa para abreviar días
@@ -62,53 +70,13 @@ export default function CrearBloque() {
     return "N";
   };
 
-  // Calcula duración en minutos
-  const calcularDatos = (inicio, fin) => {
-    setMensaje("");
-    setDuracion("");
-    setTurno("");
-    setBloqueValido(false);
-
-    if (!inicio || !fin) return;
-
-    const [h1, m1] = inicio.split(":").map(Number);
-    const [h2, m2] = fin.split(":").map(Number);
-
-    const totalMin = h2 * 60 + m2 - (h1 * 60 + m1);
-
-    if (totalMin <= 0) {
-      setDuracion("⛔ Horario inválido: fin debe ser posterior a inicio");
-      return;
-    }
-
-    const minMinutos = 50;
-    const maxMinutos = 360;
-
-    if (totalMin < minMinutos) {
-      setDuracion(`⛔ Duración mínima: ${minMinutos} minutos`);
-      return;
-    }
-    if (totalMin > maxMinutos) {
-      setDuracion("⛔ Excede las 6 horas permitidas");
-      return;
-    }
-
-    const horas = Math.floor(totalMin / 60);
-    const minutos = totalMin % 60;
-    const texto =
-      horas > 0
-        ? `${horas} hora${horas > 1 ? "s" : ""}${
-            minutos > 0 ? ` ${minutos} min` : ""
-          }`
-        : `${minutos} min`;
-
-    setDuracion(texto);
-
-    if (h1 < 12) setTurno("Mañana");
-    else if (h1 < 19) setTurno("Tarde");
-    else setTurno("Noche");
-
-    setBloqueValido(true);
+  // Determinar turno completo
+  const calcularTurno = (horaInicio) => {
+    if (!horaInicio) return "";
+    const [h] = horaInicio.split(":").map(Number);
+    if (h < 12) return "Mañana";
+    if (h < 19) return "Tarde";
+    return "Noche";
   };
 
   // Código preview visual
@@ -116,6 +84,7 @@ export default function CrearBloque() {
     const { dia, hora_inicio } = bloque;
     if (!dia || !hora_inicio) {
       setBloque((prev) => ({ ...prev, codigo_bloque: "" }));
+      setTurno("");
       return;
     }
 
@@ -124,57 +93,39 @@ export default function CrearBloque() {
     const codigoVisual = `${prefijo}-${letraTurno}…`;
 
     setBloque((prev) => ({ ...prev, codigo_bloque: codigoVisual }));
+    setTurno(calcularTurno(hora_inicio));
   }, [bloque.dia, bloque.hora_inicio]);
 
   // Handler de inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const nuevo = { ...bloque, [name]: value };
+    setBloque((prev) => ({ ...prev, [name]: value }));
 
-    setBloque(nuevo);
-
-    if (name === "hora_inicio" || name === "hora_fin") {
-      calcularDatos(
-        name === "hora_inicio" ? value : nuevo.hora_inicio,
-        name === "hora_fin" ? value : nuevo.hora_fin
-      );
-    } else if (name === "dia") {
-      calcularDatos(nuevo.hora_inicio, nuevo.hora_fin);
-    }
-
-    if (
-      (name === "dia" || name === "hora_inicio") &&
-      nuevo.dia &&
-      nuevo.hora_inicio
-    ) {
-      obtenerCodigoSugerido(nuevo.dia, nuevo.hora_inicio);
+    if (name === "hora_inicio") {
+      setTurno(calcularTurno(value));
     }
   };
 
-  const handleRegistrarClick = (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setMensaje("");
 
-    if (!bloque.dia || !bloque.hora_inicio || !bloque.hora_fin) {
-      setErrorMensaje("Completa día, hora inicio y hora fin.");
-      setShowErrorModal(true);
-      return;
-    }
-    if (!bloqueValido) {
-      setErrorMensaje("El bloque no es válido. Revisa duración o horas.");
-      setShowErrorModal(true);
+    if (!bloque.dia || !bloque.hora_inicio) {
+      setMensaje("⚠️ Completa día y hora de inicio.");
       return;
     }
 
-    setShowConfirmModal(true);
-  };
+    const horaFin = calcularHoraFin(bloque.hora_inicio);
+    if (!horaFin) {
+      setMensaje("⚠️ No hay horario válido posterior para crear el bloque.");
+      return;
+    }
 
-  const confirmarRegistro = async () => {
     const payload = {
       dia: bloque.dia,
       hora_inicio: bloque.hora_inicio,
-      hora_fin: bloque.hora_fin,
     };
+
+    console.log("📤 Enviando payload:", payload);
 
     setLoading(true);
     try {
@@ -188,245 +139,233 @@ export default function CrearBloque() {
       );
 
       const data = await res.json();
+      console.log("📥 Respuesta del servidor:", data);
 
       if (res.ok) {
-        setBloqueRegistrado({
+        setMensaje(
+          `✅ Bloque registrado: ${data.codigo_bloque} (${bloque.hora_inicio} - ${data.hora_fin})`
+        );
+
+        setBloque((prev) => ({
+          ...prev,
           codigo_bloque: data.codigo_bloque,
-          dia: bloque.dia,
-          hora_inicio: bloque.hora_inicio,
-          hora_fin: bloque.hora_fin,
-          duracion: duracion,
-          turno: turno,
-        });
+        }));
 
-        setShowConfirmModal(false);
-        setShowSuccessModal(true);
-
-        // Resetear formulario
-        setBloque({
-          codigo_bloque: "",
-          dia: "",
-          hora_inicio: "",
-          hora_fin: "",
-        });
-        setDuracion("");
-        setTurno("");
-        setBloqueValido(false);
+        setTimeout(() => {
+          setBloque({
+            codigo_bloque: "",
+            dia: "",
+            hora_inicio: "",
+          });
+          setMensaje("");
+          setTurno("");
+        }, 3000);
       } else {
-        setErrorMensaje(data.error || "No se pudo registrar el bloque.");
-        setShowConfirmModal(false);
-        setShowErrorModal(true);
+        setMensaje(`❌ ${data.error || "No se pudo registrar el bloque."}`);
       }
     } catch (error) {
-      console.error(error);
-      setErrorMensaje("Error de conexión con la API.");
-      setShowConfirmModal(false);
-      setShowErrorModal(true);
+      console.error("❌ Error:", error);
+      setMensaje("❌ Error de conexión con la API.");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="registrar-horario">
-      <div className="header-section">
-        <h2>📅 Registrar Nuevo Bloque Horario</h2>
-        <p className="subtitle">
-          Crea nuevos bloques horarios para organizar las clases
-        </p>
-      </div>
+  const horaFin = bloque.hora_inicio ? calcularHoraFin(bloque.hora_inicio) : "";
 
-      <form onSubmit={handleRegistrarClick} className="form-horario">
+  return (
+    <div style={{ maxWidth: 640, margin: "24px auto", padding: 20 }}>
+      <h2 style={{ textAlign: "center", marginBottom: 18 }}>
+        Registrar Nuevo Bloque Horario
+      </h2>
+
+      <div>
         {/* DÍA */}
-        <div className="campo">
-          <label>
-            Día de la Semana*
-            <select
-              name="dia"
-              value={bloque.dia}
-              onChange={handleChange}
-              aria-required="true"
-            >
-              <option value="">-- Seleccione día --</option>
-              <option value="Lunes">Lunes</option>
-              <option value="Martes">Martes</option>
-              <option value="Miércoles">Miércoles</option>
-              <option value="Jueves">Jueves</option>
-              <option value="Viernes">Viernes</option>
-              <option value="Sábado">Sábado</option>
-            </select>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", marginBottom: 4 }}>
+            Día de la Semana*:
           </label>
+          <select
+            name="dia"
+            value={bloque.dia}
+            onChange={handleChange}
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "8px",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+            }}
+          >
+            <option value="">-- Seleccione día --</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+            <option value="Sábado">Sábado</option>
+          </select>
         </div>
 
-        {/* HORAS */}
-        <div className="campo-horas">
-          <label>
-            Hora Inicio*
-            <input
-              type="time"
+        {/* HORA INICIO Y FIN EN LA MISMA FILA */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: "block", marginBottom: 4 }}>
+              Hora de Inicio*:
+            </label>
+            <select
               name="hora_inicio"
               value={bloque.hora_inicio}
               onChange={handleChange}
-              aria-required="true"
-              min="06:00"
-              max="23:00"
-            />
-            <small>Formato 24h (HH:MM)</small>
-          </label>
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+              }}
+            >
+              <option value="">-- Seleccione --</option>
+              {HORARIOS_VALIDOS.slice(0, -1).map((hora) => (
+                <option key={hora} value={hora}>
+                  {hora}
+                </option>
+              ))}
+            </select>
+            <small style={{ display: "block", marginTop: 4, color: "#666" }}>
+              Horarios válidos de la secuencia
+            </small>
+          </div>
 
-          <label>
-            Hora Fin*
+          {/* HORA FIN (AUTOMÁTICA) */}
+          <div style={{ flex: 1 }}>
+            <label style={{ display: "block", marginBottom: 4 }}>
+              Termina a las:
+            </label>
             <input
-              type="time"
-              name="hora_fin"
-              value={bloque.hora_fin}
-              onChange={handleChange}
-              aria-required="true"
-              min="06:30"
-              max="23:59"
+              type="text"
+              value={horaFin || "—"}
+              readOnly
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+                background: "#f5f5f5",
+                color: horaFin ? "#333" : "#999",
+                fontWeight: horaFin ? "500" : "normal",
+              }}
             />
-            <small>Formato 24h (HH:MM)</small>
-          </label>
+          </div>
         </div>
 
         {/* CÓDIGO */}
-        <div className="campo">
-          <label>
-            Código del Bloque
-            <input
-              type="text"
-              name="codigo_bloque"
-              value={bloque.codigo_bloque}
-              readOnly
-              aria-readonly="true"
-            />
-            <small>Se genera automáticamente. Ej: LUN-M…</small>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", marginBottom: 4 }}>
+            Código del Bloque:
           </label>
+          <input
+            type="text"
+            name="codigo_bloque"
+            value={bloque.codigo_bloque || "—"}
+            readOnly
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "8px",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+              background: "#f5f5f5",
+            }}
+          />
+          <small style={{ display: "block", marginTop: 4, color: "#666" }}>
+            Se genera automáticamente. Ej: LUN-M1
+          </small>
         </div>
 
         {/* INFO AUTOMÁTICA */}
-        <div className="info-automatica">
-          <div className="info-item">
-            <strong>⏱️ Duración:</strong>
-            <span>{duracion || "—"}</span>
+        {turno && (
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              marginTop: 10,
+              marginBottom: 16,
+              padding: 12,
+              borderRadius: 8,
+              background: "rgba(0,0,0,0.03)",
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <strong>Turno:</strong>
+              <div style={{ marginTop: 4 }}>{turno}</div>
+            </div>
           </div>
-          <div className="info-item">
-            <strong>🌅 Turno:</strong>
-            <span>{turno || "—"}</span>
-          </div>
-        </div>
+        )}
 
-        {/* BOTÓN */}
-        <div className="botones">
+        {/* BOTONES */}
+        <div style={{ display: "flex", gap: 12 }}>
           <button
-            type="submit"
-            disabled={!bloqueValido || loading}
-            className="btn-guardar"
+            type="button"
+            onClick={() => navigate("/superadmin/listar-horario")}
+            style={{
+              flex: 1,
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "1px solid rgba(0,0,0,0.08)",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Ver Lista de horarios
+          </button>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!bloque.dia || !bloque.hora_inicio || loading}
+            style={{
+              flex: 1,
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "none",
+              background:
+                !bloque.dia || !bloque.hora_inicio || loading
+                  ? "linear-gradient(135deg,#9bbffb,#7f9fd9)"
+                  : "linear-gradient(135deg,#007aff,#005acc)",
+              color: "#fff",
+              cursor:
+                !bloque.dia || !bloque.hora_inicio || loading
+                  ? "not-allowed"
+                  : "pointer",
+            }}
           >
             {loading ? "Guardando..." : "Guardar Bloque"}
           </button>
         </div>
-      </form>
+      </div>
 
-      {/* Modal de Confirmación */}
-      {showConfirmModal && (
-        <div className="modal-overlay" onClick={() => !loading && setShowConfirmModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>📅 ¿Confirmar registro?</h3>
-
-            <div className="modal-body">
-              <p>Estás a punto de crear el siguiente bloque horario:</p>
-              <div className="horario-detail">
-                <strong>{bloque.codigo_bloque}</strong> - {bloque.dia}
-                <br />
-                {bloque.hora_inicio} - {bloque.hora_fin}
-                <br />
-                <span className="detalle-info">Duración: {duracion} • Turno: {turno}</span>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => {
-                  setShowConfirmModal(false);
-                }}
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                className="btn-confirm"
-                onClick={confirmarRegistro}
-                disabled={loading}
-              >
-                {loading ? "Registrando..." : "Sí, Registrar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Éxito */}
-      {showSuccessModal && bloqueRegistrado && (
-        <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
-          <div className="modal-content modal-success" onClick={(e) => e.stopPropagation()}>
-            <div className="success-icon">✅</div>
-            <h3 className="success-title">Registro Exitoso</h3>
-
-            <div className="modal-body">
-              <p>El bloque <strong>{bloqueRegistrado.codigo_bloque}</strong> ha sido creado correctamente.</p>
-              
-              <div className="detalles-box">
-                <h4 className="detalles-title">📋 Detalles del bloque:</h4>
-                <ul className="detalles-list">
-                  <li>Día: <strong>{bloqueRegistrado.dia}</strong></li>
-                  <li>Horario: <strong>{bloqueRegistrado.hora_inicio} - {bloqueRegistrado.hora_fin}</strong></li>
-                  <li>Duración: <strong>{bloqueRegistrado.duracion}</strong></li>
-                  <li>Turno: <strong>{bloqueRegistrado.turno}</strong></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                className="btn-success"
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  setBloqueRegistrado(null);
-                }}
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Error */}
-      {showErrorModal && (
-        <div className="modal-overlay" onClick={() => setShowErrorModal(false)}>
-          <div className="modal-content modal-error" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon">❌</div>
-            <h3 className="error-title">Error al Registrar</h3>
-
-            <div className="modal-body">
-              <p className="error-message">{errorMensaje}</p>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                className="btn-error"
-                onClick={() => {
-                  setShowErrorModal(false);
-                  setErrorMensaje("");
-                }}
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
+      {mensaje && (
+        <p
+          style={{
+            marginTop: 14,
+            padding: 10,
+            borderRadius: 6,
+            background: mensaje.includes("✅")
+              ? "#d4edda"
+              : mensaje.includes("⚠️")
+              ? "#fff3cd"
+              : "#f8d7da",
+            color: mensaje.includes("✅")
+              ? "#155724"
+              : mensaje.includes("⚠️")
+              ? "#856404"
+              : "#721c24",
+          }}
+        >
+          {mensaje}
+        </p>
       )}
     </div>
   );
