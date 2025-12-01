@@ -6,7 +6,7 @@ function CrearAlumno() {
     nombres: "",
     apellido_paterno: "",
     apellido_materno: "",
-    correo_institucional: "",
+    correo_institucional: "", // Ahora se genera automáticamente
     correo_personal: "",
     dni: "",
     telefono: "",
@@ -36,12 +36,34 @@ function CrearAlumno() {
     generarCiclos();
   }, []);
 
-  // ========== FUNCIONES DE VALIDACIÓN ==========
-  
-  const validarCorreoInstitucional = (correo) => {
-    return correo.endsWith("@alumnounfv.edu.pe");
+  // ========== FUNCIÓN PARA GENERAR CORREO INSTITUCIONAL ==========
+  const generarCorreoInstitucional = (nombres, apellidoPaterno, apellidoMaterno) => {
+    if (!nombres || !apellidoPaterno || !apellidoMaterno) return "";
+    
+    // Limpiar y normalizar texto (quitar acentos y espacios)
+    const limpiar = (texto) => {
+      return texto
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+        .replace(/\s+/g, ""); // Quitar espacios
+    };
+    
+    const nombreLimpio = limpiar(nombres);
+    const paternoLimpio = limpiar(apellidoPaterno);
+    const maternoLimpio = limpiar(apellidoMaterno);
+    
+    // Tomar primeras 4 letras del nombre
+    const parteNombre = nombreLimpio.substring(0, 4);
+    // Tomar primeras 2 letras de cada apellido
+    const partePaterno = paternoLimpio.substring(0, 2);
+    const parteMaterno = maternoLimpio.substring(0, 2);
+    
+    return `${parteNombre}${partePaterno}${parteMaterno}@alumnounfv.edu.pe`;
   };
 
+  // ========== FUNCIONES DE VALIDACIÓN ==========
+  
   const validarCodigoUniversitario = (codigo) => {
     const errors = [];
     
@@ -95,12 +117,9 @@ function CrearAlumno() {
     return errors;
   };
 
+  // ✅ MODIFICACIÓN: Se removió la validación que impedía apellidos iguales
   const validarApellidos = (paterno, materno) => {
     const errors = [];
-    
-    if (paterno.trim().toLowerCase() === materno.trim().toLowerCase() && paterno.trim() !== "") {
-      errors.push("El apellido paterno y materno no pueden ser iguales");
-    }
     
     const validarFormato = (apellido, tipo) => {
       if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(apellido)) {
@@ -163,11 +182,6 @@ function CrearAlumno() {
       case 'telefono':
         errors = validarTelefono(value);
         break;
-      case 'correo_institucional':
-        if (value && !validarCorreoInstitucional(value)) {
-          errors.push("Debe terminar en @alumnounfv.edu.pe");
-        }
-        break;
     }
     
     setValidationErrors(prev => ({
@@ -190,10 +204,21 @@ function CrearAlumno() {
       newValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     }
     
-    setFormData({
+    // ✅ MODIFICACIÓN: Generar correo automáticamente cuando cambian nombres o apellidos
+    const newFormData = {
       ...formData,
       [name]: newValue
-    });
+    };
+    
+    if (name === 'nombres' || name === 'apellido_paterno' || name === 'apellido_materno') {
+      newFormData.correo_institucional = generarCorreoInstitucional(
+        name === 'nombres' ? newValue : formData.nombres,
+        name === 'apellido_paterno' ? newValue : formData.apellido_paterno,
+        name === 'apellido_materno' ? newValue : formData.apellido_materno
+      );
+    }
+    
+    setFormData(newFormData);
     
     // Validar en tiempo real
     if (newValue) {
@@ -232,11 +257,6 @@ function CrearAlumno() {
         apellido_materno: allErrors.apellidos,
         telefono: allErrors.telefono
       });
-      return;
-    }
-
-    if (!validarCorreoInstitucional(formData.correo_institucional)) {
-      setError("El correo institucional debe pertenecer al dominio @alumnounfv.edu.pe");
       return;
     }
 
@@ -396,22 +416,21 @@ function CrearAlumno() {
             </div>
           </div>
 
-          {/* Correo Institucional */}
+          {/* ✅ MODIFICACIÓN: Correo Institucional ahora es de solo lectura (generado automáticamente) */}
           <div className="form-group">
-            <label>Correo Institucional *</label>
+            <label>Correo Institucional (Generado Automáticamente)</label>
             <input
               type="email"
               name="correo_institucional"
               value={formData.correo_institucional}
-              onChange={handleChange}
-              placeholder="ejemplo@alumnounfv.edu.pe"
-              required
-              disabled={isSubmitting}
-              style={validationErrors.correo_institucional?.length > 0 ? { borderColor: '#ef4444' } : {}}
+              placeholder="Se generará automáticamente"
+              readOnly
+              disabled
+              style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
             />
-            {validationErrors.correo_institucional?.map((err, idx) => (
-              <small key={idx} className="error-hint">⚠️ {err}</small>
-            ))}
+            <small style={{ color: '#6b7280', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+              ℹ️ Se genera automáticamente: 4 letras del nombre + 2 de cada apellido
+            </small>
           </div>
 
           {/* Correo Personal */}

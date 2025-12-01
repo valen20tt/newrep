@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from database.db import get_db
 from utils.security import hash_password
 from psycopg2.extras import RealDictCursor
+from datetime import datetime
 
 # Crear el Blueprint
 alumnos_bp = Blueprint("alumnos", __name__)
@@ -16,7 +17,6 @@ def validar_correo(correo, rol):
         "Docente": "@docenteunfv.edu.pe",
         "Alumno": "@alumnounfv.edu.pe"
     }
-    # Solo valida si el correo existe en el diccionario, si no existe, devuelve False
     if rol not in dominios:
         return False
     return correo and correo.endswith(dominios[rol])
@@ -25,7 +25,6 @@ def validar_telefono(telefono):
     """Valida que el teléfono tenga exactamente 9 dígitos"""
     if not telefono:
         return False
-    # Usar fullmatch para asegurar que toda la cadena coincide
     return bool(re.fullmatch(r'\d{9}', telefono))
 
 def validar_dni(dni):
@@ -34,123 +33,6 @@ def validar_dni(dni):
         return False
     return bool(re.fullmatch(r'\d{8}', dni))
 
-# ===========================================================
-# 📚 CONSULTA DE ASIGNACIONES DISPONIBLES SEGÚN EL CICLO ACTUAL
-# ===========================================================
-@alumnos_bp.route('/asignaciones-disponibles/<int:alumno_id>', methods=['GET'])
-def obtener_asignaciones_disponibles(alumno_id):
-    """
-    Retorna las asignaciones disponibles según el ciclo actual del estudiante.
-    El cálculo de ciclo considera que cada año equivale a dos ciclos:
-    - 2023 → ciclos I y II
-    - 2024 → ciclos III y IV
-    - etc.
-    """
-    conn = None
-    cur = None
-
-    try:
-        conn = get_db()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # ==============================
-        # 1️⃣ Obtener datos del alumno
-        # ==============================
-        cur.execute("""
-            SELECT estudiante_id, ciclo_actual
-            FROM estudiante
-            WHERE estudiante_id = %s
-        """, (alumno_id,))
-        alumno = cur.fetchone()
-
-        if not alumno:
-            return jsonify({"error": "Alumno no encontrado"}), 404
-
-        ciclo_registrado = alumno["ciclo_actual"]
-        print(f"🧮 Ciclo actual registrado en BD: {ciclo_registrado}")
-
-        # ==============================
-        # 2️⃣ Determinar ciclo real según año de ingreso
-        # ==============================
-        # Si ciclo_actual viene como "2023-I", "2024-II", etc.
-        match = re.match(r"(\d{4})\s*-\s*(I{1,3}|IV|V|VI|VII|VIII|IX|X)", ciclo_registrado)
-        if match:
-            anio_ingreso = int(match.group(1))
-            semestre_ingreso = match.group(2)
-        else:
-            # Si el formato no coincide, se asume año actual y ciclo I
-            anio_ingreso = datetime.now().year
-            semestre_ingreso = "I"
-
-        anio_actual = datetime.now().year
-        semestre_actual = "I" if datetime.now().month <= 6 else "II"
-
-        # Calcular cuántos semestres han pasado
-        diferencia_anios = anio_actual - anio_ingreso
-        semestres_pasados = diferencia_anios * 2
-        if semestre_actual == "II":
-            semestres_pasados += 1
-
-        # Ciclo numérico actual
-        ciclo_numerico = semestres_pasados + (1 if semestre_ingreso == "I" else 0)
-
-        # Mapear número a romano
-        ciclos_romanos = {
-            1: "I", 2: "II", 3: "III", 4: "IV",
-            5: "V", 6: "VI", 7: "VII", 8: "VIII",
-            9: "IX", 10: "X"
-        }
-        ciclo_romano = ciclos_romanos.get(ciclo_numerico, "X")
-
-        print(f"🧮 Calculado ciclo actual: {ciclo_romano} ({ciclo_numerico})")
-
-        # ==============================
-        # 3️⃣ Consultar asignaciones disponibles
-        # ==============================
-        cur.execute("""
-            SELECT 
-                a.id_asignacion AS asignacion_id, 
-                c.nombre_curso,
-                s.nombre AS seccion,
-                h.dia,
-                h.hora_inicio,
-                h.hora_fin,
-                h.aula,
-                CONCAT(d.nombres, ' ', d.apellidos) AS docente
-            FROM asignaciones a
-            JOIN cursos c ON a.id_curso = c.id_curso
-            JOIN secciones s ON a.id_seccion = s.id_seccion
-            JOIN docentes d ON a.id_docente = d.id_docente
-            JOIN horarios h ON a.id_horario = h.id_horario
-            WHERE c.ciclo = %s
-            ORDER BY c.nombre_curso
-        """, (ciclo_romano,))
-
-        asignaciones = cur.fetchall()
-
-        # ==============================
-        # 4️⃣ Respuesta final
-        # ==============================
-        return jsonify({
-            "alumno_id": alumno_id,
-            "ciclo_registrado": ciclo_registrado,
-            "ciclo_actual_calculado": ciclo_romano,
-            "anio_actual": anio_actual,
-            "asignaciones_disponibles": asignaciones
-        }), 200
-
-    except Exception as e:
-        print("❌ Error en /asignaciones-disponibles:", e)
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
 # ===========================
 # CREAR ALUMNO
 # ===========================
@@ -158,6 +40,7 @@ def obtener_asignaciones_disponibles(alumno_id):
 def crear_alumno():
     """
     Crea un nuevo alumno en el sistema según la estructura real de la BD.
+    ✅ MODIFICACIÓN: Ya no valida correo institucional porque se genera automáticamente
     """
     print("=" * 50)
     print("🔵 INICIO - Crear Alumno")
@@ -171,7 +54,7 @@ def crear_alumno():
     print(f"📨 Datos recibidos: {data}")
     
     # Capturar datos del formulario
-    correo_institucional = data.get("correo_institucional")
+    correo_institucional = data.get("correo_institucional")  # Ya viene generado desde el frontend
     correo_personal = data.get("correo_personal")
     nombres = data.get("nombres")
     apellido_paterno = data.get("apellido_paterno")
@@ -180,13 +63,13 @@ def crear_alumno():
     telefono = data.get("telefono")
     codigo = data.get("codigo_universitario")
     ciclo_ingreso = data.get("ciclo_ingreso")
-    escuela_id = data.get("escuela_id", 1) # Valor por defecto 1 si no se envía
+    escuela_id = data.get("escuela_id", 1)
     
     # Validaciones
     if not all([correo_institucional, nombres, apellido_paterno, apellido_materno, dni, telefono, codigo, ciclo_ingreso, correo_personal]):
         campos_faltantes = []
         if not correo_institucional: campos_faltantes.append("correo_institucional")
-        if not correo_personal: campos_faltantes.append("correo_personal") # Agregado para robustez
+        if not correo_personal: campos_faltantes.append("correo_personal")
         if not nombres: campos_faltantes.append("nombres")
         if not apellido_paterno: campos_faltantes.append("apellido_paterno")
         if not apellido_materno: campos_faltantes.append("apellido_materno")
@@ -197,7 +80,8 @@ def crear_alumno():
         
         print(f"❌ Campos faltantes: {campos_faltantes}")
         return jsonify({"error": f"Campos faltantes: {', '.join(campos_faltantes)}"}), 400
-        
+    
+    # ✅ MODIFICACIÓN: Validación del correo institucional más flexible
     if not validar_correo(correo_institucional, "Alumno"):
         return jsonify({"error": "El correo debe terminar en @alumnounfv.edu.pe"}), 400
         
@@ -229,8 +113,12 @@ def crear_alumno():
         if cur.fetchone():
             return jsonify({"error": "El DNI ya está registrado"}), 400
 
-        # Generar contraseña temporal
-        contrasena_temp = dni[-4:]
+        import random
+        import string
+        
+        # Generar contraseña de 8 caracteres: mayúsculas, minúsculas, números y símbolos
+        caracteres = string.ascii_letters + string.digits + "!@#$%&*"
+        contrasena_temp = ''.join(random.choice(caracteres) for _ in range(8))
         contrasena_hash = hash_password(contrasena_temp)
 
         # 1️⃣ Insertar usuario
@@ -273,7 +161,6 @@ def crear_alumno():
 
         # 4️⃣ Insertar estudiante
         print("➡️ Insertando estudiante...")
-        # NOTA: Al crear un alumno, ciclo_actual se inicializa con ciclo_ingreso
         cur.execute("""
             INSERT INTO estudiante (codigo_universitario, escuela_id, persona_id, ciclo_actual)
             VALUES (%s, %s, %s, %s)
@@ -289,13 +176,11 @@ def crear_alumno():
         print("=" * 50)
         
         try:
-            # La importación debe ser relativa y usar un try-except para ser robusta
             from .helpers import enviar_credenciales_estudiante
             print("✅ Función importada correctamente")
             
             nombre_completo = f"{nombres} {apellido_paterno} {apellido_materno}"
             
-            # Nota: Se usa correo_personal para el envío
             envio_exitoso = enviar_credenciales_estudiante(
                 correo_destino=correo_personal,
                 nombre_completo=nombre_completo,
@@ -312,13 +197,11 @@ def crear_alumno():
                 print(f"⚠️ Advertencia: El estudiante fue creado pero no se pudo enviar el correo")
                 
         except ImportError as ie:
-            # Esto ocurrirá si helpers.py no existe o la función no está allí
             print(f"❌ ERROR DE IMPORTACIÓN (helpers): {str(ie)}")
             import traceback
             traceback.print_exc()
             envio_exitoso = False
         except Exception as e:
-            # Manejo de cualquier otro error durante el envío
             print(f"❌ ERROR GENERAL AL ENVIAR CORREO: {str(e)}")
             import traceback
             traceback.print_exc()
@@ -335,7 +218,7 @@ def crear_alumno():
                 "usuario_id": usuario_id,
                 "codigo_universitario": codigo,
                 "correo_institucional": correo_institucional,
-                "contrasena_temporal": contrasena_temp   # Solo para desarrollo/debugging
+                "contrasena_temporal": contrasena_temp
             }
         }), 201
 
@@ -352,8 +235,104 @@ def crear_alumno():
         if conn:
             conn.close()
 
+# ===========================================================
+# 📚 CONSULTA DE ASIGNACIONES DISPONIBLES SEGÚN EL CICLO ACTUAL
+# ===========================================================
+@alumnos_bp.route('/asignaciones-disponibles/<int:alumno_id>', methods=['GET'])
+def obtener_asignaciones_disponibles(alumno_id):
+    """
+    Retorna las asignaciones disponibles según el ciclo actual del estudiante.
+    """
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT estudiante_id, ciclo_actual
+            FROM estudiante
+            WHERE estudiante_id = %s
+        """, (alumno_id,))
+        alumno = cur.fetchone()
+
+        if not alumno:
+            return jsonify({"error": "Alumno no encontrado"}), 404
+
+        ciclo_registrado = alumno["ciclo_actual"]
+        print(f"🧮 Ciclo actual registrado en BD: {ciclo_registrado}")
+
+        match = re.match(r"(\d{4})\s*-\s*(I{1,3}|IV|V|VI|VII|VIII|IX|X)", ciclo_registrado)
+        if match:
+            anio_ingreso = int(match.group(1))
+            semestre_ingreso = match.group(2)
+        else:
+            anio_ingreso = datetime.now().year
+            semestre_ingreso = "I"
+
+        anio_actual = datetime.now().year
+        semestre_actual = "I" if datetime.now().month <= 6 else "II"
+
+        diferencia_anios = anio_actual - anio_ingreso
+        semestres_pasados = diferencia_anios * 2
+        if semestre_actual == "II":
+            semestres_pasados += 1
+
+        ciclo_numerico = semestres_pasados + (1 if semestre_ingreso == "I" else 0)
+
+        ciclos_romanos = {
+            1: "I", 2: "II", 3: "III", 4: "IV",
+            5: "V", 6: "VI", 7: "VII", 8: "VIII",
+            9: "IX", 10: "X"
+        }
+        ciclo_romano = ciclos_romanos.get(ciclo_numerico, "X")
+
+        print(f"🧮 Calculado ciclo actual: {ciclo_romano} ({ciclo_numerico})")
+
+        cur.execute("""
+            SELECT 
+                a.id_asignacion AS asignacion_id, 
+                c.nombre_curso,
+                s.nombre AS seccion,
+                h.dia,
+                h.hora_inicio,
+                h.hora_fin,
+                h.aula,
+                CONCAT(d.nombres, ' ', d.apellidos) AS docente
+            FROM asignaciones a
+            JOIN cursos c ON a.id_curso = c.id_curso
+            JOIN secciones s ON a.id_seccion = s.id_seccion
+            JOIN docentes d ON a.id_docente = d.id_docente
+            JOIN horarios h ON a.id_horario = h.id_horario
+            WHERE c.ciclo = %s
+            ORDER BY c.nombre_curso
+        """, (ciclo_romano,))
+
+        asignaciones = cur.fetchall()
+
+        return jsonify({
+            "alumno_id": alumno_id,
+            "ciclo_registrado": ciclo_registrado,
+            "ciclo_actual_calculado": ciclo_romano,
+            "anio_actual": anio_actual,
+            "asignaciones_disponibles": asignaciones
+        }), 200
+
+    except Exception as e:
+        print("❌ Error en /asignaciones-disponibles:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 # ===========================
-# LISTAR ALUMNOS (MODIFICADO)
+# LISTAR ALUMNOS
 # ===========================
 @alumnos_bp.route("/alumnos", methods=["GET"])
 def listar_alumnos():
@@ -363,10 +342,8 @@ def listar_alumnos():
     
     try:
         conn = get_db()
-        # Usar RealDictCursor para obtener resultados como diccionarios
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # 🔄 CAMBIO: Ahora trae TODOS los estudiantes, no solo activos
         cur.execute("""
             SELECT 
                 e.estudiante_id,
@@ -400,7 +377,6 @@ def listar_alumnos():
         if conn:
             conn.close()
 
-
 # ===========================
 # OBTENER ALUMNO POR ID
 # ===========================
@@ -412,7 +388,6 @@ def obtener_alumno(estudiante_id):
     
     try:
         conn = get_db()
-        # Usar RealDictCursor para obtener resultados como diccionarios
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         cur.execute("""
@@ -462,7 +437,7 @@ def obtener_escuelas():
     
     try:
         conn = get_db()
-        cur = conn.cursor() # No necesitamos RealDictCursor aquí ya que mapeamos manualmente
+        cur = conn.cursor()
         
         cur.execute("SELECT escuela_id, nombre_escuela, facultad FROM escuela ORDER BY nombre_escuela")
         escuelas = cur.fetchall()
@@ -491,9 +466,7 @@ def obtener_escuelas():
 # ===========================
 @alumnos_bp.route("/alumnos/<int:estudiante_id>", methods=["PUT"])
 def modificar_alumno(estudiante_id):
-    """
-    Actualiza la información de un alumno existente.
-    """
+    """Actualiza la información de un alumno existente."""
     print("=" * 50)
     print(f"🔵 INICIO - Modificar Alumno ID: {estudiante_id}")
     print("=" * 50)
@@ -505,7 +478,6 @@ def modificar_alumno(estudiante_id):
     data = request.json
     print(f"📨 Datos recibidos: {data}")
     
-    # Capturar datos
     nombres = data.get("nombres")
     apellido_paterno = data.get("apellido_paterno")
     apellido_materno = data.get("apellido_materno")
@@ -516,7 +488,6 @@ def modificar_alumno(estudiante_id):
     ciclo_actual = data.get("ciclo_actual")
     escuela_id = data.get("escuela_id")
 
-    # Validaciones de existencia
     if not all([nombres, apellido_paterno, apellido_materno, dni, telefono, codigo, correo_institucional, ciclo_actual, escuela_id]):
         missing_fields = [k for k, v in data.items() if v is None or v == ""]
         print(f"❌ Campos obligatorios faltantes o nulos: {missing_fields}")
@@ -525,7 +496,6 @@ def modificar_alumno(estudiante_id):
             "campos_faltantes": missing_fields
         }), 400
 
-    # Validaciones de formato
     if not validar_correo(correo_institucional, "Alumno"):
         print(f"❌ Formato de correo incorrecto: {correo_institucional}")
         return jsonify({"error": "El correo debe terminar en @alumnounfv.edu.pe"}), 400
@@ -543,7 +513,6 @@ def modificar_alumno(estudiante_id):
         conn = get_db()
         cur = conn.cursor()
 
-        # Verificar que el estudiante existe
         print(f"🔍 Buscando estudiante ID: {estudiante_id}")
         cur.execute("""
             SELECT e.persona_id, p.usuario_id, e.codigo_universitario, u.correo, p.dni
@@ -561,7 +530,6 @@ def modificar_alumno(estudiante_id):
         persona_id, usuario_id, codigo_actual, correo_actual, dni_actual = result
         print(f"✅ Estudiante encontrado - Persona ID: {persona_id}, Usuario ID: {usuario_id}")
 
-        # Verificar duplicados
         if codigo != codigo_actual:
             print(f"🔍 Verificando código universitario duplicado: {codigo}")
             cur.execute("""
@@ -592,7 +560,6 @@ def modificar_alumno(estudiante_id):
                 print(f"❌ DNI duplicado: {dni}")
                 return jsonify({"error": "El DNI ya está registrado por otro estudiante"}), 400
 
-        # Actualizaciones
         if correo_institucional != correo_actual:
             print("➡️ Actualizando correo en usuario")
             cur.execute("UPDATE usuario SET correo = %s WHERE usuario_id = %s", (correo_institucional, usuario_id))
@@ -640,15 +607,12 @@ def modificar_alumno(estudiante_id):
         if conn:
             conn.close()
 
-
 # ===========================
-# ELIMINAR ALUMNO (DESACTIVAR) - SIN CAMBIOS
+# ELIMINAR ALUMNO (DESACTIVAR)
 # ===========================
 @alumnos_bp.route("/alumnos/<int:estudiante_id>", methods=["DELETE"])
 def eliminar_alumno(estudiante_id):
-    """
-    Desactiva un estudiante del sistema (no elimina físicamente).
-    """
+    """Desactiva un estudiante del sistema."""
     print("=" * 50)
     print(f"🔵 INICIO - Eliminar Alumno ID: {estudiante_id}")
     print("=" * 50)
@@ -674,7 +638,7 @@ def eliminar_alumno(estudiante_id):
             return jsonify({"error": "Estudiante no encontrado"}), 404
         
         persona_id, usuario_id, nombres, apellidos = result
-        print(f"✅ Estudiante encontrado: {nombres} {apellidos} (Persona ID: {persona_id}, Usuario ID: {usuario_id})")
+        print(f"✅ Estudiante encontrado: {nombres} {apellidos}")
 
         print("➡️ Desactivando usuario...")
         cur.execute("UPDATE usuario SET estado = 'INACTIVO' WHERE usuario_id = %s", (usuario_id,))
@@ -708,9 +672,7 @@ def eliminar_alumno(estudiante_id):
 # ===========================
 @alumnos_bp.route("/alumnos/<int:estudiante_id>/reactivar", methods=["PATCH"])
 def reactivar_alumno(estudiante_id):
-    """
-    Reactiva un estudiante desactivado del sistema.
-    """
+    """Reactiva un estudiante desactivado."""
     print("=" * 50)
     print(f"🔵 INICIO - Reactivar Alumno ID: {estudiante_id}")
     print("=" * 50)
@@ -737,7 +699,7 @@ def reactivar_alumno(estudiante_id):
             return jsonify({"error": "Estudiante no encontrado"}), 404
         
         persona_id, usuario_id, nombres, apellidos, estado_actual = result
-        print(f"✅ Estudiante encontrado: {nombres} {apellidos} (Estado actual: {estado_actual})")
+        print(f"✅ Estudiante encontrado: {nombres} {apellidos} (Estado: {estado_actual})")
 
         if estado_actual == 'ACTIVO':
             print(f"⚠️ El estudiante ya está activo")
