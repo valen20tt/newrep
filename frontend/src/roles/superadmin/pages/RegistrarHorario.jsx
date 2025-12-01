@@ -14,6 +14,11 @@ export default function CrearBloque() {
   const [turno, setTurno] = useState("");
   const [bloqueValido, setBloqueValido] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [bloqueRegistrado, setBloqueRegistrado] = useState(null);
+  const [errorMensaje, setErrorMensaje] = useState("");
 
   // Obtiene el próximo código real desde el backend
   const obtenerCodigoSugerido = async (dia, horaInicio) => {
@@ -34,6 +39,7 @@ export default function CrearBloque() {
       console.error("Error al obtener código sugerido:", e);
     }
   };
+
   // Mapa para abreviar días
   const abreviarDia = (dia) => {
     const map = {
@@ -136,7 +142,6 @@ export default function CrearBloque() {
       calcularDatos(nuevo.hora_inicio, nuevo.hora_fin);
     }
 
-    // MOSTRAR EL CÓDIGO REAL
     if (
       (name === "dia" || name === "hora_inicio") &&
       nuevo.dia &&
@@ -146,20 +151,25 @@ export default function CrearBloque() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleRegistrarClick = (e) => {
     e.preventDefault();
     setMensaje("");
 
     if (!bloque.dia || !bloque.hora_inicio || !bloque.hora_fin) {
-      setMensaje("⚠️ Completa día, hora inicio y hora fin.");
+      setErrorMensaje("Completa día, hora inicio y hora fin.");
+      setShowErrorModal(true);
       return;
     }
     if (!bloqueValido) {
-      setMensaje("⚠️ El bloque no es válido. Revisa duración o horas.");
+      setErrorMensaje("El bloque no es válido. Revisa duración o horas.");
+      setShowErrorModal(true);
       return;
     }
 
-    // Payload sin estado (backend lo pondrá como Activo)
+    setShowConfirmModal(true);
+  };
+
+  const confirmarRegistro = async () => {
     const payload = {
       dia: bloque.dia,
       hora_inicio: bloque.hora_inicio,
@@ -180,58 +190,62 @@ export default function CrearBloque() {
       const data = await res.json();
 
       if (res.ok) {
-        setMensaje(`✅ Bloque registrado: ${data.codigo_bloque}`);
-
-        // Mostrar el código generado por el backend
-        setBloque((prev) => ({
-          ...prev,
+        setBloqueRegistrado({
           codigo_bloque: data.codigo_bloque,
-        }));
+          dia: bloque.dia,
+          hora_inicio: bloque.hora_inicio,
+          hora_fin: bloque.hora_fin,
+          duracion: duracion,
+          turno: turno,
+        });
 
-        // Reiniciar horas y día pero conservar el código generado
-        setTimeout(() => {
-          setBloque({
-            codigo_bloque: "",
-            dia: "",
-            hora_inicio: "",
-            hora_fin: "",
-          });
-        }, 2000);
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
 
+        // Resetear formulario
+        setBloque({
+          codigo_bloque: "",
+          dia: "",
+          hora_inicio: "",
+          hora_fin: "",
+        });
         setDuracion("");
         setTurno("");
         setBloqueValido(false);
       } else {
-        setMensaje(`❌ ${data.error || "No se pudo registrar el bloque."}`);
+        setErrorMensaje(data.error || "No se pudo registrar el bloque.");
+        setShowConfirmModal(false);
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error(error);
-      setMensaje("❌ Error de conexión con la API.");
+      setErrorMensaje("Error de conexión con la API.");
+      setShowConfirmModal(false);
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="registrar-horario"
-      style={{ maxWidth: 640, margin: "24px auto", padding: 20 }}
-    >
-      <h2 style={{ textAlign: "center", marginBottom: 18 }}>
-        Registrar Nuevo Bloque Horario
-      </h2>
+    <div className="registrar-horario">
+      <div className="header-section">
+        <h2>📅 Registrar Nuevo Bloque Horario</h2>
+        <p className="subtitle">
+          Crea nuevos bloques horarios para organizar las clases
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="form-horario">
+      <form onSubmit={handleRegistrarClick} className="form-horario">
         {/* DÍA */}
-        <div className="campo" style={{ marginBottom: 12 }}>
+        <div className="campo">
           <label>
-            Día de la Semana*:
+            Día de la Semana*
             <select
               name="dia"
               value={bloque.dia}
               onChange={handleChange}
               aria-required="true"
-              style={{ display: "block", width: "100%", marginTop: 6 }}
             >
               <option value="">-- Seleccione día --</option>
               <option value="Lunes">Lunes</option>
@@ -245,12 +259,9 @@ export default function CrearBloque() {
         </div>
 
         {/* HORAS */}
-        <div
-          className="campo"
-          style={{ display: "flex", gap: 12, marginBottom: 8 }}
-        >
-          <label style={{ flex: 1 }}>
-            Hora Inicio*:
+        <div className="campo-horas">
+          <label>
+            Hora Inicio*
             <input
               type="time"
               name="hora_inicio"
@@ -259,15 +270,12 @@ export default function CrearBloque() {
               aria-required="true"
               min="06:00"
               max="23:00"
-              style={{ display: "block", marginTop: 6, width: "100%" }}
             />
-            <small style={{ display: "block", marginTop: 6 }}>
-              Formato 24h (HH:MM)
-            </small>
+            <small>Formato 24h (HH:MM)</small>
           </label>
 
-          <label style={{ flex: 1 }}>
-            Hora Fin*:
+          <label>
+            Hora Fin*
             <input
               type="time"
               name="hora_fin"
@@ -276,99 +284,150 @@ export default function CrearBloque() {
               aria-required="true"
               min="06:30"
               max="23:59"
-              style={{ display: "block", marginTop: 6, width: "100%" }}
             />
-            <small style={{ display: "block", marginTop: 6 }}>
-              Formato 24h (HH:MM)
-            </small>
+            <small>Formato 24h (HH:MM)</small>
           </label>
         </div>
 
         {/* CÓDIGO */}
-        <div className="campo" style={{ marginBottom: 8 }}>
+        <div className="campo">
           <label>
-            Código del Bloque:
+            Código del Bloque
             <input
               type="text"
               name="codigo_bloque"
               value={bloque.codigo_bloque}
               readOnly
               aria-readonly="true"
-              style={{ display: "block", marginTop: 6, width: "100%" }}
             />
-            <small style={{ display: "block", marginTop: 6 }}>
-              Se genera automáticamente. Ej: LUN-M…
-            </small>
+            <small>Se genera automáticamente. Ej: LUN-M…</small>
           </label>
         </div>
 
         {/* INFO AUTOMÁTICA */}
-        <div
-          className="info-automatica"
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            marginTop: 10,
-            marginBottom: 8,
-            padding: 10,
-            borderRadius: 8,
-            background: "rgba(0,0,0,0.03)",
-          }}
-        >
-          {/*Agregar iconos de box-icons*/}
-          <div style={{ flex: 1 }}>
-            <strong>Duración:</strong>
-            <div>{duracion || "—"}</div>
+        <div className="info-automatica">
+          <div className="info-item">
+            <strong>⏱️ Duración:</strong>
+            <span>{duracion || "—"}</span>
           </div>
-          <div style={{ flex: 1 }}>
-            <strong>Turno:</strong>
-            <div>{turno || "—"}</div>
+          <div className="info-item">
+            <strong>🌅 Turno:</strong>
+            <span>{turno || "—"}</span>
           </div>
         </div>
 
-        {/* BOTONES */}
-        <div
-          className="botones"
-          style={{ display: "flex", gap: 12, marginTop: 12 }}
-        >
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.08)",
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Ver Lista de horarios
-          </button>
-
+        {/* BOTÓN */}
+        <div className="botones">
           <button
             type="submit"
             disabled={!bloqueValido || loading}
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: "none",
-              background:
-                !bloqueValido || loading
-                  ? "linear-gradient(135deg,#9bbffb,#7f9fd9)"
-                  : "linear-gradient(135deg,#007aff,#005acc)",
-              color: "#fff",
-              cursor: !bloqueValido || loading ? "not-allowed" : "pointer",
-            }}
+            className="btn-guardar"
           >
             {loading ? "Guardando..." : "Guardar Bloque"}
           </button>
         </div>
       </form>
 
-      <p style={{ marginTop: 14 }}>{mensaje}</p>
+      {/* Modal de Confirmación */}
+      {showConfirmModal && (
+        <div className="modal-overlay" onClick={() => !loading && setShowConfirmModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>📅 ¿Confirmar registro?</h3>
+
+            <div className="modal-body">
+              <p>Estás a punto de crear el siguiente bloque horario:</p>
+              <div className="horario-detail">
+                <strong>{bloque.codigo_bloque}</strong> - {bloque.dia}
+                <br />
+                {bloque.hora_inicio} - {bloque.hora_fin}
+                <br />
+                <span className="detalle-info">Duración: {duracion} • Turno: {turno}</span>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                }}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={confirmarRegistro}
+                disabled={loading}
+              >
+                {loading ? "Registrando..." : "Sí, Registrar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Éxito */}
+      {showSuccessModal && bloqueRegistrado && (
+        <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
+          <div className="modal-content modal-success" onClick={(e) => e.stopPropagation()}>
+            <div className="success-icon">✅</div>
+            <h3 className="success-title">Registro Exitoso</h3>
+
+            <div className="modal-body">
+              <p>El bloque <strong>{bloqueRegistrado.codigo_bloque}</strong> ha sido creado correctamente.</p>
+              
+              <div className="detalles-box">
+                <h4 className="detalles-title">📋 Detalles del bloque:</h4>
+                <ul className="detalles-list">
+                  <li>Día: <strong>{bloqueRegistrado.dia}</strong></li>
+                  <li>Horario: <strong>{bloqueRegistrado.hora_inicio} - {bloqueRegistrado.hora_fin}</strong></li>
+                  <li>Duración: <strong>{bloqueRegistrado.duracion}</strong></li>
+                  <li>Turno: <strong>{bloqueRegistrado.turno}</strong></li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn-success"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setBloqueRegistrado(null);
+                }}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Error */}
+      {showErrorModal && (
+        <div className="modal-overlay" onClick={() => setShowErrorModal(false)}>
+          <div className="modal-content modal-error" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon">❌</div>
+            <h3 className="error-title">Error al Registrar</h3>
+
+            <div className="modal-body">
+              <p className="error-message">{errorMensaje}</p>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn-error"
+                onClick={() => {
+                  setShowErrorModal(false);
+                  setErrorMensaje("");
+                }}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

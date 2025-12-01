@@ -4,8 +4,13 @@ import "../styles/editar-horario.css";
 export default function EditarHorario() {
   const [bloques, setBloques] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [mensaje, setMensaje] = useState("");
   const [seleccionado, setSeleccionado] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMensaje, setErrorMensaje] = useState("");
+  const [bloqueEditado, setBloqueEditado] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Formulario
   const [form, setForm] = useState({
@@ -82,14 +87,14 @@ export default function EditarHorario() {
     const fetchBloques = async () => {
       try {
         setCargando(true);
-        // Ajusta la url si tu backend está en otro puerto/ruta
         const res = await fetch("http://localhost:5000/superadmin/bloques-horarios-listar");
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Error al obtener bloques.");
         setBloques(data);
       } catch (err) {
         console.error(err);
-        setMensaje("❌ Error al obtener bloques horarios.");
+        setErrorMensaje("Error al obtener bloques horarios.");
+        setShowErrorModal(true);
       } finally {
         setCargando(false);
       }
@@ -100,7 +105,6 @@ export default function EditarHorario() {
   // ---------- al seleccionar uno ----------
   const seleccionarBloque = (b) => {
     setSeleccionado(b.bloque_id);
-    // Ajuste de nombres entre backend y form
     setForm({
       bloque_id: b.bloque_id,
       codigo_bloque: b.codigo_bloque || "",
@@ -125,21 +129,27 @@ export default function EditarHorario() {
     }
   };
 
-  // ---------- guardar cambios (PUT) ----------
-  const handleGuardar = async (e) => {
+  // ---------- abrir modal de confirmación ----------
+  const handleGuardarClick = (e) => {
     e.preventDefault();
-    setMensaje("");
 
-    // validaciones front
     if (!form.dia || !form.hora_inicio || !form.hora_fin) {
-      setMensaje("⚠️ Completa día, hora inicio y hora fin.");
+      setErrorMensaje("Completa día, hora inicio y hora fin.");
+      setShowErrorModal(true);
       return;
     }
     if (duracion.startsWith("⛔")) {
-      setMensaje("⚠️ Corrige la duración del bloque.");
+      setErrorMensaje("Corrige la duración del bloque.");
+      setShowErrorModal(true);
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  // ---------- confirmar edición (PUT) ----------
+  const confirmarEdicion = async () => {
+    setLoading(true);
     try {
       const res = await fetch(
         `http://localhost:5000/superadmin/bloques-horarios/${form.bloque_id}`,
@@ -157,11 +167,13 @@ export default function EditarHorario() {
 
       const data = await res.json();
       if (!res.ok) {
-        setMensaje("❌ " + (data.error || "Error al editar."));
+        setErrorMensaje(data.error || "Error al editar.");
+        setShowConfirmModal(false);
+        setShowErrorModal(true);
         return;
       }
 
-      // Actualizar lista localmente: reemplazar bloque editado
+      // Actualizar lista localmente
       setBloques((prev) =>
         prev.map((b) =>
           b.bloque_id === form.bloque_id
@@ -177,12 +189,28 @@ export default function EditarHorario() {
         )
       );
 
-      setMensaje("✅ Bloque actualizado correctamente.");
-      // actualizar seleccionado con nuevo código si backend devolvió uno
+      setBloqueEditado({
+        codigo_bloque: data.codigo_bloque || form.codigo_bloque,
+        dia: form.dia,
+        hora_inicio: form.hora_inicio,
+        hora_fin: form.hora_fin,
+        estado: form.estado,
+        duracion: duracion,
+        turno: turno,
+      });
+
+      setShowConfirmModal(false);
+      setShowSuccessModal(true);
+
+      // Actualizar form con nuevo código si backend devolvió uno
       setForm((prev) => ({ ...prev, codigo_bloque: data.codigo_bloque || prev.codigo_bloque }));
     } catch (err) {
       console.error(err);
-      setMensaje("❌ Error de conexión al editar.");
+      setErrorMensaje("Error de conexión al editar.");
+      setShowConfirmModal(false);
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,14 +227,16 @@ export default function EditarHorario() {
     });
     setDuracion("");
     setTurno("");
-    setMensaje("");
   };
 
   if (cargando) return <div className="editar-cargando">Cargando bloques...</div>;
 
   return (
     <div className="editar-horario-root">
-      <h2>✏️ Editar Bloque Horario</h2>
+      <div className="header-section">
+        <h2>✏️ Editar Bloque Horario</h2>
+        <p className="subtitle">Modifica los bloques horarios existentes</p>
+      </div>
 
       <div className="editar-layout">
         {/* ----- Lista de bloques (lado izquierdo) ----- */}
@@ -243,7 +273,7 @@ export default function EditarHorario() {
           {!seleccionado ? (
             <div className="mensaje-seleccionar">Selecciona un bloque a la izquierda para editarlo.</div>
           ) : (
-            <form onSubmit={handleGuardar}>
+            <form onSubmit={handleGuardarClick}>
               <label>
                 Código:
                 <input type="text" name="codigo_bloque" value={form.codigo_bloque} readOnly />
@@ -276,8 +306,8 @@ export default function EditarHorario() {
               </label>
 
               <div className="info-automatica">
-                <p>Duración: {duracion || "—"}</p>
-                <p>Turno: {turno || "—"}</p>
+                <p>⏱️ Duración: {duracion || "—"}</p>
+                <p>🌅 Turno: {turno || "—"}</p>
               </div>
 
               <label>
@@ -294,13 +324,110 @@ export default function EditarHorario() {
                 </button>
                 <button type="submit" className="btn-guardar">Guardar Cambios</button>
               </div>
-
-              {mensaje && <p className="mensaje">{mensaje}</p>}
             </form>
           )}
         </div>
       </div>
+
+      {/* Modal de Confirmación */}
+      {showConfirmModal && (
+        <div className="modal-overlay" onClick={() => !loading && setShowConfirmModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>✏️ ¿Confirmar cambios?</h3>
+
+            <div className="modal-body">
+              <p>Estás a punto de modificar el siguiente bloque horario:</p>
+              <div className="horario-detail">
+                <strong>{form.codigo_bloque}</strong> - {form.dia}
+                <br />
+                {form.hora_inicio} - {form.hora_fin}
+                <br />
+                <span className="detalle-info">Estado: {form.estado}</span>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={confirmarEdicion}
+                disabled={loading}
+              >
+                {loading ? "Guardando..." : "Sí, Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Éxito */}
+      {showSuccessModal && bloqueEditado && (
+        <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
+          <div className="modal-content modal-success" onClick={(e) => e.stopPropagation()}>
+            <div className="success-icon">✅</div>
+            <h3 className="success-title">Edición Exitosa</h3>
+
+            <div className="modal-body">
+              <p>El bloque <strong>{bloqueEditado.codigo_bloque}</strong> ha sido actualizado correctamente.</p>
+              
+              <div className="detalles-box">
+                <h4 className="detalles-title">📋 Nuevos datos del bloque:</h4>
+                <ul className="detalles-list">
+                  <li>Día: <strong>{bloqueEditado.dia}</strong></li>
+                  <li>Horario: <strong>{bloqueEditado.hora_inicio} - {bloqueEditado.hora_fin}</strong></li>
+                  <li>Duración: <strong>{bloqueEditado.duracion}</strong></li>
+                  <li>Turno: <strong>{bloqueEditado.turno}</strong></li>
+                  <li>Estado: <strong>{bloqueEditado.estado}</strong></li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn-success"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setBloqueEditado(null);
+                }}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Error */}
+      {showErrorModal && (
+        <div className="modal-overlay" onClick={() => setShowErrorModal(false)}>
+          <div className="modal-content modal-error" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon">❌</div>
+            <h3 className="error-title">Error al Editar</h3>
+
+            <div className="modal-body">
+              <p className="error-message">{errorMensaje}</p>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn-error"
+                onClick={() => {
+                  setShowErrorModal(false);
+                  setErrorMensaje("");
+                }}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
