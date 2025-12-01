@@ -648,6 +648,7 @@ def eliminar_docente(usuario_id):
             return jsonify({"error": "Docente no encontrado"}), 404
         persona_id = res[0]
         
+        
         cur.execute("SELECT id_direccion FROM docente WHERE persona_id=%s", (persona_id,))
         res_doc = cur.fetchone()
         id_direccion = res_doc[0] if res_doc else None

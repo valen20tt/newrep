@@ -264,6 +264,7 @@ def modificar_admin(usuario_id):
             return jsonify({"error": "Persona no encontrada"}), 404
         persona_id, direccion_id = persona
 
+
         # 3️⃣ ACTUALIZAR PERSONA
         cur.execute("""
             UPDATE persona SET
