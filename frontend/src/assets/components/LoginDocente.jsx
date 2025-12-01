@@ -6,17 +6,20 @@ const LoginDocente = ({ onLoginSuccess }) => {
   const [contrasena, setContrasena] = useState("");
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [tipoMensaje, setTipoMensaje] = useState(""); // 'success', 'error', 'warning'
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
 
     if (!correo || !contrasena) {
       setMensaje("Por favor completa todos los campos.");
+      setTipoMensaje("error");
       return;
     }
 
     setCargando(true);
     setMensaje("");
+    setTipoMensaje("");
 
     try {
       const res = await fetch("http://localhost:5000/auth/login/docente", {
@@ -29,22 +32,30 @@ const LoginDocente = ({ onLoginSuccess }) => {
 
       if (res.ok) {
         setMensaje(`✅ Bienvenido, ${data.nombre || "Docente"}`);
+        setTipoMensaje("success");
 
-        // ✅ CORRECCIÓN: Usar sessionStorage en lugar de localStorage
-        // sessionStorage aísla los datos a la pestaña actual, evitando la superposición.
+        // Guardar datos en sessionStorage
         sessionStorage.setItem("usuario_id", data.usuario_id);
         sessionStorage.setItem("docente_id", data.docente_id);
         sessionStorage.setItem("nombre_docente", data.nombre);
         sessionStorage.setItem("rol", data.rol);
 
-        // 🧩 Pasar la información al componente principal (App.jsx)
+        // Pasar la información al componente principal
         onLoginSuccess(data);
       } else {
-        setMensaje(`❌ Error: ${data.error || "Credenciales inválidas"}`);
+        // 🔒 MANEJO ESPECÍFICO PARA CUENTA INACTIVA
+        if (data.error === "Cuenta desactivada") {
+          setMensaje(`🔒 ${data.mensaje || "Tu cuenta está inactiva. Contacta al administrador."}`);
+          setTipoMensaje("warning");
+        } else {
+          setMensaje(`❌ Error: ${data.error || "Credenciales inválidas"}`);
+          setTipoMensaje("error");
+        }
       }
     } catch (err) {
       console.error("Error de conexión:", err);
       setMensaje("⚠️ Error de conexión con el servidor.");
+      setTipoMensaje("error");
     } finally {
       setCargando(false);
     }
@@ -84,11 +95,7 @@ const LoginDocente = ({ onLoginSuccess }) => {
           </div>
 
           {mensaje && (
-            <p
-              className={`login-docente__message ${
-                mensaje.includes("✅") ? "success" : "error"
-              }`}
-            >
+            <p className={`login-docente__message ${tipoMensaje}`}>
               {mensaje}
             </p>
           )}

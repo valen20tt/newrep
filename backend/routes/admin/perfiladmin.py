@@ -57,7 +57,7 @@ def obtener_mi_perfil(usuario_id):
             FROM usuario u
             JOIN persona p ON u.usuario_id = p.usuario_id
             JOIN administrador a ON p.persona_id = a.persona_id
-            LEFT JOIN direccion d ON p.direccion_id = d.id_direccion
+            LEFT JOIN direccion d ON p.id_direccion = d.id_direccion
             LEFT JOIN distrito dist ON d.id_distrito = dist.distrito_id
             LEFT JOIN provincia prov ON dist.provincia_id = prov.provincia_id
             LEFT JOIN departamento_geo dep ON prov.departamento_id = dep.departamento_id

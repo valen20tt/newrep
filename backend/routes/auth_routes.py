@@ -71,15 +71,42 @@ def authenticate_user(correo, contrasena, expected_rol):
             SELECT e.estudiante_id, p.nombres, p.apellidos
             FROM estudiante e
             JOIN persona p ON e.persona_id = p.persona_id
-            WHERE p.usuario_id = %s  -- ✅ CORRECCIÓN: Usar p.usuario_id en lugar de e.usuario_id
+            WHERE p.usuario_id = %s
         """, (user_id,))
         info = cur.fetchone()
-        cur.close()
-        conn.close()
+        
         if not info:
+            cur.close()
+            conn.close()
             return jsonify({"error": "No se encontró información del alumno"}), 404
 
         estudiante_id, nombres, apellidos = info
+        
+        # 🔒 VALIDACIÓN DE ESTADO DEL ALUMNO
+        # Verificar el estado en la tabla usuario
+        cur.execute("""
+            SELECT u.estado
+            FROM usuario u
+            JOIN persona p ON u.usuario_id = p.usuario_id
+            JOIN estudiante e ON p.persona_id = e.persona_id
+            WHERE e.estudiante_id = %s
+        """, (estudiante_id,))
+        estado_result = cur.fetchone()
+        
+        if estado_result:
+            estado = estado_result[0]
+            # Si el estado es INACTIVO, no permitir login
+            if estado and estado.upper() == "INACTIVO":
+                cur.close()
+                conn.close()
+                return jsonify({
+                    "error": "Cuenta desactivada", 
+                    "mensaje": "Tu cuenta se encuentra inactiva. Por favor, contacta al administrador para más información."
+                }), 403
+        
+        cur.close()
+        conn.close()
+
         return jsonify({
             "usuario_id": user_id,
             "estudiante_id": estudiante_id,
@@ -91,10 +118,10 @@ def authenticate_user(correo, contrasena, expected_rol):
     # 💡 Si es DOCENTE
     if expected_rol.lower() == "docente":
         cur.execute("""
-            SELECT d.docente_id, p.nombres, p.apellidos
+            SELECT d.docente_id, p.nombres, p.apellidos, d.estado
             FROM docente d
             JOIN persona p ON d.persona_id = p.persona_id
-            WHERE p.usuario_id = %s  -- ✅ CORRECCIÓN: Usar p.usuario_id en lugar de d.usuario_id
+            WHERE p.usuario_id = %s
         """, (user_id,))
         info = cur.fetchone()
         cur.close()
@@ -102,7 +129,16 @@ def authenticate_user(correo, contrasena, expected_rol):
         if not info:
             return jsonify({"error": "No se encontró información del docente"}), 404
 
-        docente_id, nombres, apellidos = info
+        docente_id, nombres, apellidos, estado = info
+        
+        # 🔒 VALIDACIÓN DE ESTADO DEL DOCENTE
+        # El estado es booleano: True = Activo, False = Inactivo
+        if not estado:  # Si estado es False o None
+            return jsonify({
+                "error": "Cuenta desactivada", 
+                "mensaje": "Tu cuenta se encuentra inactiva. Por favor, contacta al administrador para más información."
+            }), 403
+
         return jsonify({
             "usuario_id": user_id,
             "docente_id": docente_id,

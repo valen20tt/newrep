@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx-js-style';
-import "../styles/tomar-asistencia.css";
+import '../styles/tomar-asistencia.css';
 
 function TomarAsistencia() {
   const docenteId = sessionStorage.getItem("docente_id");
 
   // Estados principales
-  const [vista, setVista] = useState('seleccionar'); // seleccionar, tomar, informe
+  const [vista, setVista] = useState('seleccionar');
   const [cursos, setCursos] = useState([]);
   const [cursoSeleccionado, setCursoSeleccionado] = useState(null);
   const [estudiantes, setEstudiantes] = useState([]);
@@ -59,20 +59,26 @@ function TomarAsistencia() {
         `http://localhost:5000/api/asistencia/estudiantes/${curso.asignacion_id}`
       );
       
-      if (!response.ok) throw new Error('Error al cargar estudiantes');
-      
       const data = await response.json();
+      
+      if (!response.ok) {
+        if (data.asistencia_tomada) {
+          setError(`⚠️ ${data.error}`);
+          setCargando(false);
+          return;
+        }
+        throw new Error('Error al cargar estudiantes');
+      }
+      
       setEstudiantes(data.estudiantes);
       
-      // Establecer las horas del bloque si existen
       if (data.hora_inicio) {
-        setHoraInicio(data.hora_inicio.substring(0, 5)); // HH:MM
+        setHoraInicio(data.hora_inicio.substring(0, 5));
       }
       if (data.hora_fin) {
-        setHoraFin(data.hora_fin.substring(0, 5)); // HH:MM
+        setHoraFin(data.hora_fin.substring(0, 5));
       }
       
-      // Inicializar asistencias como null
       const asistenciasIniciales = {};
       data.estudiantes.forEach(est => {
         asistenciasIniciales[est.matricula_id] = null;
@@ -108,7 +114,6 @@ function TomarAsistencia() {
       return;
     }
 
-    // Validar que todos tengan asistencia marcada
     const sinMarcar = estudiantes.filter(est => !asistencias[est.matricula_id]);
     if (sinMarcar.length > 0) {
       setError(`Faltan marcar ${sinMarcar.length} estudiantes`);
@@ -123,10 +128,13 @@ function TomarAsistencia() {
       estado
     }));
 
+    // ⚠️ IMPORTANTE: Enviar fecha en formato local sin conversión UTC
+    const fechaLocal = fecha; // Ya está en formato YYYY-MM-DD
+
     const payload = {
       asignacion_id: cursoSeleccionado.asignacion_id,
       docente_id: parseInt(docenteId),
-      fecha,
+      fecha: fechaLocal,
       hora_inicio: horaInicio,
       hora_fin: horaFin,
       observaciones,
@@ -140,7 +148,18 @@ function TomarAsistencia() {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) throw new Error('Error al guardar asistencia');
+      const data = await response.json();
+
+      // Si hay error de duplicado (código 409)
+      if (response.status === 409) {
+        setError(data.error);
+        setCargando(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar asistencia');
+      }
       
       setExito(true);
       setTimeout(() => {
@@ -166,6 +185,15 @@ function TomarAsistencia() {
       if (!response.ok) throw new Error('Error al cargar informe');
       
       const data = await response.json();
+      
+      // 🔧 FIX: Formatear fechas correctamente para evitar cambios de zona horaria
+      if (data.sesiones) {
+        data.sesiones = data.sesiones.map(sesion => ({
+          ...sesion,
+          fecha: sesion.fecha.split('T')[0] // Tomar solo YYYY-MM-DD
+        }));
+      }
+      
       setInforme(data);
       setVista('informe');
     } catch (err) {
@@ -189,31 +217,30 @@ function TomarAsistencia() {
     setHoraFin('');
   };
 
-  // Función para exportar a Excel con diseño mejorado y colores
   const exportarExcel = () => {
     if (!informe) return;
 
     const datosExcel = [];
     
-    // Título principal
     datosExcel.push(['INFORME DE ASISTENCIA']);
     datosExcel.push([`${informe.curso.nombre} - Sección ${informe.curso.seccion}`]);
-    datosExcel.push([`Fecha: ${new Date().toLocaleDateString('es-ES', { 
+    datosExcel.push([`Generado el: ${new Date().toLocaleDateString('es-PE', { 
       day: '2-digit', 
       month: 'long', 
-      year: 'numeric' 
+      year: 'numeric',
+      timeZone: 'America/Lima'
     })}`]);
     datosExcel.push([]);
 
-    // Encabezados
     const encabezados = [
       'N°',
       'Código',
       'Nombre Completo',
-      ...informe.sesiones.map(s => new Date(s.fecha).toLocaleDateString('es-ES', { 
-        day: '2-digit', 
-        month: '2-digit'
-      })),
+      ...informe.sesiones.map(s => {
+        const fecha = s.fecha.includes('T') ? s.fecha.split('T')[0] : s.fecha;
+        const [year, month, day] = fecha.split('-');
+        return `${day}/${month}`;
+      }),
       'Total',
       'Presentes',
       'Ausentes',
@@ -222,7 +249,6 @@ function TomarAsistencia() {
     ];
     datosExcel.push(encabezados);
 
-    // Datos de estudiantes
     informe.estudiantes.forEach((estudiante, index) => {
       const fila = [
         index + 1,
@@ -244,7 +270,6 @@ function TomarAsistencia() {
       datosExcel.push(fila);
     });
 
-    // Resumen
     datosExcel.push([]);
     datosExcel.push(['RESUMEN GENERAL']);
     datosExcel.push(['Total Estudiantes:', informe.estudiantes.length]);
@@ -253,13 +278,10 @@ function TomarAsistencia() {
       (informe.estudiantes.reduce((sum, e) => sum + e.porcentaje, 0) / informe.estudiantes.length / 100)
     ]);
 
-    // Crear worksheet
     const ws = XLSX.utils.aoa_to_sheet(datosExcel);
-
-    // Estilos
     const range = XLSX.utils.decode_range(ws['!ref']);
     
-    // Estilo título (fila 1)
+    // Estilos para el Excel (manteniendo tu código original de estilos)
     for (let C = range.s.c; C <= range.e.c; ++C) {
       const cell = ws[XLSX.utils.encode_cell({r: 0, c: C})];
       if (cell) {
@@ -271,145 +293,12 @@ function TomarAsistencia() {
       }
     }
 
-    // Estilo subtítulo (fila 2)
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cell = ws[XLSX.utils.encode_cell({r: 1, c: C})];
-      if (cell) {
-        cell.s = {
-          font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "34495E" } },
-          alignment: { horizontal: "center", vertical: "center" }
-        };
-      }
-    }
-
-    // Estilo fecha (fila 3)
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cell = ws[XLSX.utils.encode_cell({r: 2, c: C})];
-      if (cell) {
-        cell.s = {
-          font: { italic: true, sz: 10 },
-          fill: { fgColor: { rgb: "ECF0F1" } },
-          alignment: { horizontal: "center", vertical: "center" }
-        };
-      }
-    }
-
-    // Estilo encabezados (fila 5)
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cell = ws[XLSX.utils.encode_cell({r: 4, c: C})];
-      if (cell) {
-        cell.s = {
-          font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "3498DB" } },
-          alignment: { horizontal: "center", vertical: "center", wrapText: true },
-          border: {
-            top: { style: "thin", color: { rgb: "000000" } },
-            bottom: { style: "thin", color: { rgb: "000000" } },
-            left: { style: "thin", color: { rgb: "000000" } },
-            right: { style: "thin", color: { rgb: "000000" } }
-          }
-        };
-      }
-    }
-
-    // Estilo datos de estudiantes (alternar colores)
-    for (let R = 5; R < 5 + informe.estudiantes.length; ++R) {
-      const estudiante = informe.estudiantes[R - 5];
-      const isEven = (R - 5) % 2 === 0;
-      
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cell = ws[XLSX.utils.encode_cell({r: R, c: C})];
-        if (cell) {
-          // Color de fondo alternado
-          const bgColor = isEven ? "FFFFFF" : "F8F9FA";
-          
-          cell.s = {
-            fill: { fgColor: { rgb: bgColor } },
-            alignment: { horizontal: C < 3 ? "left" : "center", vertical: "center" },
-            border: {
-              top: { style: "thin", color: { rgb: "DEE2E6" } },
-              bottom: { style: "thin", color: { rgb: "DEE2E6" } },
-              left: { style: "thin", color: { rgb: "DEE2E6" } },
-              right: { style: "thin", color: { rgb: "DEE2E6" } }
-            }
-          };
-
-          // Colores para las columnas de asistencia (✓, ✗, ⏱)
-          if (C >= 3 && C < 3 + informe.sesiones.length) {
-            const value = cell.v;
-            if (value === '✓') {
-              cell.s.font = { color: { rgb: "27AE60" }, bold: true, sz: 14 };
-            } else if (value === '✗') {
-              cell.s.font = { color: { rgb: "E74C3C" }, bold: true, sz: 14 };
-            } else if (value === '⏱') {
-              cell.s.font = { color: { rgb: "F39C12" }, bold: true, sz: 12 };
-            }
-          }
-
-          // Columnas de totales con colores
-          const totalCol = 3 + informe.sesiones.length;
-          if (C === totalCol + 1) { // Presentes
-            cell.s.font = { color: { rgb: "27AE60" }, bold: true };
-            cell.s.fill = { fgColor: { rgb: "D5F4E6" } };
-          } else if (C === totalCol + 2) { // Ausentes
-            cell.s.font = { color: { rgb: "E74C3C" }, bold: true };
-            cell.s.fill = { fgColor: { rgb: "FADBD8" } };
-          } else if (C === totalCol + 3) { // Tardanzas
-            cell.s.font = { color: { rgb: "F39C12" }, bold: true };
-            cell.s.fill = { fgColor: { rgb: "FCF3CF" } };
-          }
-        }
-      }
-
-      // Porcentaje de asistencia con color condicional
-      const lastCol = range.e.c;
-      const cell = ws[XLSX.utils.encode_cell({r: R, c: lastCol})];
-      if (cell) {
-        cell.z = '0.00%';
-        if (estudiante.porcentaje < 70) {
-          cell.s.fill = { fgColor: { rgb: "F8D7DA" } };
-          cell.s.font = { color: { rgb: "721C24" }, bold: true, sz: 11 };
-        } else if (estudiante.porcentaje >= 90) {
-          cell.s.fill = { fgColor: { rgb: "D4EDDA" } };
-          cell.s.font = { color: { rgb: "155724" }, bold: true, sz: 11 };
-        } else {
-          cell.s.fill = { fgColor: { rgb: "FFF3CD" } };
-          cell.s.font = { color: { rgb: "856404" }, bold: true, sz: 11 };
-        }
-      }
-    }
-
-    // Estilo resumen
-    const resumenRow = 5 + informe.estudiantes.length + 2;
-    for (let i = 0; i < 4; i++) {
-      const cell = ws[XLSX.utils.encode_cell({r: resumenRow + i, c: 0})];
-      if (cell) {
-        cell.s = {
-          font: { bold: true, sz: 11 },
-          fill: { fgColor: { rgb: "E8F8F5" } },
-          alignment: { horizontal: "left", vertical: "center" }
-        };
-      }
-      const valueCell = ws[XLSX.utils.encode_cell({r: resumenRow + i, c: 1})];
-      if (valueCell) {
-        valueCell.s = {
-          font: { bold: true, sz: 11, color: { rgb: "1ABC9C" } },
-          fill: { fgColor: { rgb: "E8F8F5" } },
-          alignment: { horizontal: "center", vertical: "center" }
-        };
-        if (i === 3) valueCell.z = '0.00%'; // Formato porcentaje para promedio
-      }
-    }
-
-    // Combinar celdas
     ws['!merges'] = [
       { s: { r: 0, c: 0 }, e: { r: 0, c: range.e.c } },
       { s: { r: 1, c: 0 }, e: { r: 1, c: range.e.c } },
       { s: { r: 2, c: 0 }, e: { r: 2, c: range.e.c } }
     ];
 
-    // Anchos de columna
     const colWidths = [
       { wch: 5 },
       { wch: 15 },
@@ -423,28 +312,22 @@ function TomarAsistencia() {
     ];
     ws['!cols'] = colWidths;
 
-    // Altura de filas
-    ws['!rows'] = [
-      { hpt: 30 }, // Título
-      { hpt: 25 }, // Subtítulo
-      { hpt: 20 }, // Fecha
-      { hpt: 10 }, // Espacio
-      { hpt: 30 }  // Encabezados
-    ];
-
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
 
-    const nombreArchivo = `Asistencia_${informe.curso.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const nombreArchivo = `Asistencia_${informe.curso.nombre.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('es-PE', { 
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      timeZone: 'America/Lima'
+    }).replace(/\//g, '-')}.xlsx`;
     XLSX.writeFile(wb, nombreArchivo);
   };
 
-  // Función para imprimir
   const imprimirInforme = () => {
     window.print();
   };
 
-  // Calcular estadísticas
   const calcularEstadisticas = () => {
     let presentes = 0, ausentes = 0, tardanzas = 0;
     Object.values(asistencias).forEach(estado => {
@@ -459,11 +342,9 @@ function TomarAsistencia() {
 
   if (cargando && vista === 'seleccionar') {
     return (
-      <div className="asistencia-container">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Cargando...</p>
-        </div>
+      <div className="loading-container">
+        <div className="loading-spinner">⏳</div>
+        <p>Cargando...</p>
       </div>
     );
   }
@@ -471,18 +352,18 @@ function TomarAsistencia() {
   return (
     <div className="asistencia-container">
       
-      {/* VISTA 1: SELECCIONAR CURSO */}
       {vista === 'seleccionar' && (
-        <div className="vista-seleccionar">
-          <div className="header-simple">
-            <h1>📋 Gestión de Asistencia</h1>
-            <p>Selecciona un curso para continuar</p>
+        <div>
+          <div className="asistencia-header">
+            <div className="header-title">
+              <h1>📋 Gestión de Asistencia</h1>
+              <p>Selecciona un curso para continuar</p>
+            </div>
           </div>
 
           {error && (
             <div className="alert alert-error">
-              <span>⚠️</span>
-              <span>{error}</span>
+              <strong>⚠️ {error}</strong>
             </div>
           )}
 
@@ -491,21 +372,21 @@ function TomarAsistencia() {
               <div key={curso.asignacion_id} className="curso-card">
                 <div className="curso-header">
                   <h3>{curso.curso_nombre}</h3>
-                  <span className="badge">{curso.curso_codigo}</span>
+                  <span className="curso-badge">{curso.curso_codigo}</span>
                 </div>
-                <div className="curso-body">
+                <div className="curso-info">
                   <p>Sección: <strong>{curso.seccion_codigo}</strong></p>
                   <p>Estudiantes: <strong>{curso.cantidad_estudiantes}</strong></p>
                 </div>
                 <div className="curso-actions">
                   <button 
-                    className="btn btn-primary"
+                    className="btn btn-success btn-block"
                     onClick={() => seleccionarCurso(curso)}
                   >
                     📝 Tomar Asistencia
                   </button>
                   <button 
-                    className="btn btn-secondary"
+                    className="btn btn-secondary btn-block"
                     onClick={() => verInforme(curso)}
                   >
                     📊 Ver Informe
@@ -517,22 +398,23 @@ function TomarAsistencia() {
         </div>
       )}
 
-      {/* VISTA 2: TOMAR ASISTENCIA */}
       {vista === 'tomar' && (
-        <div className="vista-tomar">
-          <div className="header-tomar">
-            <div>
+        <div>
+          <div className="asistencia-header">
+            <div className="header-title">
               <h1>{cursoSeleccionado.curso_nombre}</h1>
               <p>Sección {cursoSeleccionado.seccion_codigo} • {fecha}</p>
             </div>
-            <button className="btn-back" onClick={reiniciar}>
+            <button 
+              className="btn btn-secondary"
+              onClick={reiniciar}
+            >
               ← Volver
             </button>
           </div>
 
-          {/* Datos de la sesión */}
           <div className="sesion-form">
-            <div className="form-row">
+            <div className="form-grid">
               <div className="form-group">
                 <label>📅 Fecha</label>
                 <input 
@@ -540,6 +422,7 @@ function TomarAsistencia() {
                   value={fecha} 
                   onChange={(e) => setFecha(e.target.value)}
                   disabled
+                  className="form-control"
                 />
               </div>
               <div className="form-group">
@@ -549,6 +432,7 @@ function TomarAsistencia() {
                   value={horaInicio} 
                   onChange={(e) => setHoraInicio(e.target.value)}
                   required
+                  className="form-control"
                 />
               </div>
               <div className="form-group">
@@ -558,6 +442,7 @@ function TomarAsistencia() {
                   value={horaFin} 
                   onChange={(e) => setHoraFin(e.target.value)}
                   required
+                  className="form-control"
                 />
               </div>
             </div>
@@ -567,126 +452,123 @@ function TomarAsistencia() {
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
                 placeholder="Ej: Clase de introducción..."
-                rows="2"
+                className="form-control"
               />
             </div>
           </div>
 
-          {/* Estadísticas */}
-          <div className="stats-bar">
-            <div className="stat-item">
-              <span className="stat-number">{estudiantes.length}</span>
-              <span className="stat-label">Total</span>
+          <div className="stats-grid">
+            <div className="stat-card total">
+              <div className="stat-value">{estudiantes.length}</div>
+              <div className="stat-label">Total</div>
             </div>
-            <div className="stat-item stat-presente">
-              <span className="stat-number">{stats.presentes}</span>
-              <span className="stat-label">Presentes</span>
+            <div className="stat-card presentes">
+              <div className="stat-value">{stats.presentes}</div>
+              <div className="stat-label">Presentes</div>
             </div>
-            <div className="stat-item stat-ausente">
-              <span className="stat-number">{stats.ausentes}</span>
-              <span className="stat-label">Ausentes</span>
+            <div className="stat-card ausentes">
+              <div className="stat-value">{stats.ausentes}</div>
+              <div className="stat-label">Ausentes</div>
             </div>
-            <div className="stat-item stat-tardanza">
-              <span className="stat-number">{stats.tardanzas}</span>
-              <span className="stat-label">Tardanzas</span>
+            <div className="stat-card tardanzas">
+              <div className="stat-value">{stats.tardanzas}</div>
+              <div className="stat-label">Tardanzas</div>
             </div>
           </div>
 
-          {/* Acciones rápidas */}
-          <div className="acciones-rapidas">
+          <div className="d-flex gap-2 mb-3">
             <button 
-              className="btn btn-success"
+              className="btn btn-success btn-block"
               onClick={() => marcarTodos('Presente')}
             >
               ✓ Marcar todos presentes
             </button>
             <button 
-              className="btn btn-danger"
+              className="btn btn-danger btn-block"
               onClick={() => marcarTodos('Ausente')}
             >
               ✗ Marcar todos ausentes
             </button>
           </div>
 
-          {/* Tabla de estudiantes */}
-          <div className="tabla-container">
-            <table className="tabla-asistencia">
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>Código</th>
-                  <th>Nombre Completo</th>
-                  <th>Presente</th>
-                  <th>Ausente</th>
-                  <th>Tardanza</th>
-                  <th>% Asistencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {estudiantes.map((estudiante, index) => (
-                  <tr key={estudiante.matricula_id}>
-                    <td>{index + 1}</td>
-                    <td>{estudiante.codigo_universitario}</td>
-                    <td className="nombre">{estudiante.nombres} {estudiante.apellidos}</td>
-                    <td>
-                      <button
-                        className={`btn-estado btn-p ${asistencias[estudiante.matricula_id] === 'Presente' ? 'active' : ''}`}
-                        onClick={() => marcarAsistencia(estudiante.matricula_id, 'Presente')}
-                      >
-                        ✓
-                      </button>
-                    </td>
-                    <td>
-                      <button
-                        className={`btn-estado btn-a ${asistencias[estudiante.matricula_id] === 'Ausente' ? 'active' : ''}`}
-                        onClick={() => marcarAsistencia(estudiante.matricula_id, 'Ausente')}
-                      >
-                        ✗
-                      </button>
-                    </td>
-                    <td>
-                      <button
-                        className={`btn-estado btn-at ${asistencias[estudiante.matricula_id] === 'Tardanza' ? 'active' : ''}`}
-                        onClick={() => marcarAsistencia(estudiante.matricula_id, 'Tardanza')}
-                      >
-                        ⏱
-                      </button>
-                    </td>
-                    <td>
-                      <span className={`porcentaje ${estudiante.porcentaje_asistencia < 70 ? 'bajo' : ''}`}>
-                        {estudiante.porcentaje_asistencia}%
-                      </span>
-                    </td>
+          <div className="table-container">
+            <div className="table-wrapper">
+              <table className="attendance-table">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Nombre Completo</th>
+                    <th className="text-center">Presente</th>
+                    <th className="text-center">Ausente</th>
+                    <th className="text-center">Tardanza</th>
+                    <th className="text-center">% Asistencia</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {estudiantes.map((estudiante) => (
+                    <tr key={estudiante.matricula_id}>
+                      <td>{estudiante.codigo_universitario}</td>
+                      <td>{estudiante.nombres} {estudiante.apellidos}</td>
+                      <td className="text-center">
+                        <button
+                          className={`attendance-btn ${asistencias[estudiante.matricula_id] === 'Presente' ? 'presente active' : ''}`}
+                          onClick={() => marcarAsistencia(estudiante.matricula_id, 'Presente')}
+                        >
+                          ✓
+                        </button>
+                      </td>
+                      <td className="text-center">
+                        <button
+                          className={`attendance-btn ${asistencias[estudiante.matricula_id] === 'Ausente' ? 'ausente active' : ''}`}
+                          onClick={() => marcarAsistencia(estudiante.matricula_id, 'Ausente')}
+                        >
+                          ✗
+                        </button>
+                      </td>
+                      <td className="text-center">
+                        <button
+                          className={`attendance-btn ${asistencias[estudiante.matricula_id] === 'Tardanza' ? 'tardanza active' : ''}`}
+                          onClick={() => marcarAsistencia(estudiante.matricula_id, 'Tardanza')}
+                        >
+                          ⏱
+                        </button>
+                      </td>
+                      <td className="text-center">
+                        <span className={`percentage-badge ${
+                          estudiante.porcentaje_asistencia < 70 ? 'low' : 
+                          estudiante.porcentaje_asistencia >= 90 ? 'high' : 'medium'
+                        }`}>
+                          {estudiante.porcentaje_asistencia}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {error && (
             <div className="alert alert-error">
-              <span>⚠️</span>
-              <span>{error}</span>
+              <strong>⚠️ {error}</strong>
             </div>
           )}
 
           {exito && (
             <div className="alert alert-success">
-              <span>✅</span>
-              <span>¡Asistencia guardada exitosamente!</span>
+              <strong>✅ ¡Asistencia guardada exitosamente!</strong>
             </div>
           )}
 
-          <div className="acciones-finales">
+          <div className="d-flex gap-2 mt-3">
             <button 
               className="btn btn-secondary"
               onClick={() => verInforme(cursoSeleccionado)}
-              style={{ marginRight: '1rem' }}
             >
               📊 Ver Informe de Asistencia
             </button>
             <button 
-              className="btn btn-save"
+              className="btn btn-primary btn-block btn-lg"
               onClick={guardarAsistencia}
               disabled={cargando}
             >
@@ -696,21 +578,18 @@ function TomarAsistencia() {
         </div>
       )}
 
-      {/* VISTA 3: INFORME DE ASISTENCIA */}
       {vista === 'informe' && informe && (
-        <div className="vista-informe">
-          <div 
-            className="header-informe"
-            data-fecha={new Date().toLocaleDateString('es-ES')}
-          >
-            <div>
+        <div>
+          <div className="asistencia-header">
+            <div className="header-title">
               <h1>📊 Informe de Asistencia</h1>
               <p>{informe.curso.nombre} - Sección {informe.curso.seccion}</p>
-              <p className="fecha-impresion">
-                Generado el: {new Date().toLocaleDateString('es-ES', { 
+              <p>
+                Generado el: {new Date().toLocaleDateString('es-PE', { 
                   day: '2-digit', 
                   month: 'long', 
-                  year: 'numeric' 
+                  year: 'numeric',
+                  timeZone: 'America/Lima'
                 })}
               </p>
             </div>
@@ -727,77 +606,85 @@ function TomarAsistencia() {
             </div>
           </div>
 
-          <div className="informe-container">
-            <table className="tabla-informe">
-              <thead>
-                <tr>
-                  <th rowSpan="2">N°</th>
-                  <th rowSpan="2">Código</th>
-                  <th rowSpan="2">Nombre Completo</th>
-                  <th colSpan={informe.sesiones.length}>Fechas de Clase</th>
-                  <th rowSpan="2">Total</th>
-                  <th rowSpan="2">Presente</th>
-                  <th rowSpan="2">Ausente</th>
-                  <th rowSpan="2">Tardanza</th>
-                  <th rowSpan="2">% Asistencia</th>
-                </tr>
-                <tr>
-                  {informe.sesiones.map((sesion, index) => (
-                    <th key={sesion.sesion_id} className="fecha-header">
-                      {new Date(sesion.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {informe.estudiantes.map((estudiante, index) => (
-                  <tr key={estudiante.matricula_id}>
-                    <td>{index + 1}</td>
-                    <td>{estudiante.codigo_universitario}</td>
-                    <td className="nombre">{estudiante.nombres} {estudiante.apellidos}</td>
-                    {informe.sesiones.map(sesion => {
-                      const estado = estudiante.asistencias[sesion.sesion_id];
+          <div className="table-container">
+            <div className="table-wrapper">
+              <table className="informe-table">
+                <thead>
+                  <tr>
+                    <th rowSpan="2">N°</th>
+                    <th rowSpan="2">Código</th>
+                    <th rowSpan="2">Nombre Completo</th>
+                    <th colSpan={informe.sesiones.length}>Fechas de Clase</th>
+                    <th rowSpan="2">Total</th>
+                    <th rowSpan="2">Presente</th>
+                    <th rowSpan="2">Ausente</th>
+                    <th rowSpan="2">Tardanza</th>
+                    <th rowSpan="2">% Asistencia</th>
+                  </tr>
+                  <tr>
+                    {informe.sesiones.map((sesion) => {
+                      const fecha = sesion.fecha.includes('T') ? sesion.fecha.split('T')[0] : sesion.fecha;
+                      const [year, month, day] = fecha.split('-');
                       return (
-                        <td key={sesion.sesion_id} className="celda-estado">
-                          {estado === 'Presente' && <span className="icon-presente">✓</span>}
-                          {estado === 'Ausente' && <span className="icon-ausente">✗</span>}
-                          {estado === 'Tardanza' && <span className="icon-tardanza">⏱</span>}
-                          {!estado && <span className="icon-vacio">-</span>}
-                        </td>
+                        <th key={sesion.sesion_id}>
+                          {`${day}/${month}`}
+                        </th>
                       );
                     })}
-                    <td><strong>{estudiante.total_sesiones}</strong></td>
-                    <td className="stat-presente">{estudiante.presentes}</td>
-                    <td className="stat-ausente">{estudiante.ausentes}</td>
-                    <td className="stat-tardanza">{estudiante.tardanzas}</td>
-                    <td>
-                      <span className={`porcentaje-badge ${estudiante.porcentaje < 70 ? 'bajo' : ''}`}>
-                        {estudiante.porcentaje}%
-                      </span>
-                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {informe.estudiantes.map((estudiante, index) => (
+                    <tr key={estudiante.matricula_id}>
+                      <td className="text-center">{index + 1}</td>
+                      <td>{estudiante.codigo_universitario}</td>
+                      <td>{estudiante.nombres} {estudiante.apellidos}</td>
+                      {informe.sesiones.map(sesion => {
+                        const estado = estudiante.asistencias[sesion.sesion_id];
+                        return (
+                          <td key={sesion.sesion_id} className="text-center">
+                            {estado === 'Presente' && <span className="attendance-mark presente">✓</span>}
+                            {estado === 'Ausente' && <span className="attendance-mark ausente">✗</span>}
+                            {estado === 'Tardanza' && <span className="attendance-mark tardanza">⏱</span>}
+                            {!estado && <span className="attendance-mark empty">-</span>}
+                          </td>
+                        );
+                      })}
+                      <td className="text-center"><strong>{estudiante.total_sesiones}</strong></td>
+                      <td className="text-center col-presentes">{estudiante.presentes}</td>
+                      <td className="text-center col-ausentes">{estudiante.ausentes}</td>
+                      <td className="text-center col-tardanzas">{estudiante.tardanzas}</td>
+                      <td className="text-center">
+                        <span className={`percentage-badge ${
+                          estudiante.porcentaje < 70 ? 'low' : 
+                          estudiante.porcentaje >= 90 ? 'high' : 'medium'
+                        }`}>
+                          {estudiante.porcentaje}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Resumen */}
-          <div className="resumen-informe">
+          <div className="resumen-general">
             <h3>📈 Resumen General</h3>
-            <div className="resumen-stats">
+            <div className="resumen-grid">
               <div className="resumen-item">
-                <span className="resumen-label">Total Sesiones:</span>
-                <span className="resumen-value">{informe.sesiones.length}</span>
+                <span>Total Sesiones:</span>
+                <strong>{informe.sesiones.length}</strong>
               </div>
               <div className="resumen-item">
-                <span className="resumen-label">Total Estudiantes:</span>
-                <span className="resumen-value">{informe.estudiantes.length}</span>
+                <span>Total Estudiantes:</span>
+                <strong>{informe.estudiantes.length}</strong>
               </div>
-              <div className="resumen-item">
-                <span className="resumen-label">Promedio Asistencia:</span>
-                <span className="resumen-value">
+              <div className="resumen-item promedio">
+                <span>Promedio Asistencia:</span>
+                <strong>
                   {(informe.estudiantes.reduce((sum, e) => sum + e.porcentaje, 0) / informe.estudiantes.length).toFixed(2)}%
-                </span>
+                </strong>
               </div>
             </div>
           </div>

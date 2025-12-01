@@ -5,6 +5,8 @@ function VerHorario({ estudianteId }) {
   const [horario, setHorario] = useState([]);
   const [loading, setLoading] = useState(true);
   const [vistaActual, setVistaActual] = useState('semana');
+  const [claseSeleccionada, setClaseSeleccionada] = useState(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   const DIAS_ORDEN = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -23,6 +25,16 @@ function VerHorario({ estudianteId }) {
 
     obtenerHorario();
   }, [estudianteId]);
+
+  const abrirModal = (clase) => {
+    setClaseSeleccionada(clase);
+    setModalAbierto(true);
+  };
+
+  const cerrarModal = () => {
+    setModalAbierto(false);
+    setTimeout(() => setClaseSeleccionada(null), 300);
+  };
 
   // Calcular rango de horas dinámicamente
   const horaAMinutos = (hora) => {
@@ -189,8 +201,10 @@ function VerHorario({ estudianteId }) {
                             className={`clase-block-estudiante ${color}`}
                             style={{
                               top: `${posicion.top}px`,
-                              height: `${posicion.height}px`
+                              height: `${posicion.height}px`,
+                              cursor: 'pointer'
                             }}
+                            onClick={() => abrirModal(clase)}
                           >
                             <div className="clase-content-estudiante">
                               <div className="clase-info">
@@ -233,7 +247,12 @@ function VerHorario({ estudianteId }) {
                     {clasesDelDia
                       .sort((a, b) => horaAMinutos(a.hora_inicio) - horaAMinutos(b.hora_inicio))
                       .map((clase, index) => (
-                        <div key={`${dia}-${index}`} className="lista-clase-item-estudiante">
+                        <div 
+                          key={`${dia}-${index}`} 
+                          className="lista-clase-item-estudiante"
+                          onClick={() => abrirModal(clase)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="lista-hora-estudiante">
                             <div className="hora-inicio-estudiante">{clase.hora_inicio?.substring(0, 5)}</div>
                             <div className="hora-fin-estudiante">{clase.hora_fin?.substring(0, 5)}</div>
@@ -273,6 +292,116 @@ function VerHorario({ estudianteId }) {
                 {new Set(horario.map(c => c.curso_codigo)).size}
               </div>
               <div className="estadistica-label-estudiante">Cursos Diferentes</div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Detalles de Clase */}
+        {modalAbierto && claseSeleccionada && (
+          <div className="modal-overlay" onClick={cerrarModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>📚 Detalles de la Clase</h2>
+                <button className="modal-close" onClick={cerrarModal}>✕</button>
+              </div>
+              
+              <div className="modal-body">
+                {/* Curso Info */}
+                <div className="modal-section">
+                  <h3 className="modal-section-title">Información del Curso</h3>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">📖 Curso:</span>
+                      <span className="modal-info-value">{claseSeleccionada.curso_nombre}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">🔢 Código:</span>
+                      <span className="modal-info-value">{claseSeleccionada.curso_codigo}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">⭐ Créditos:</span>
+                      <span className="modal-info-value">{claseSeleccionada.creditos}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">👥 Sección:</span>
+                      <span className="modal-info-value">{claseSeleccionada.seccion}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Horario Info */}
+                <div className="modal-section">
+                  <h3 className="modal-section-title">Horario</h3>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">📅 Día:</span>
+                      <span className="modal-info-value">{claseSeleccionada.dia}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">🕐 Hora Inicio:</span>
+                      <span className="modal-info-value">{claseSeleccionada.hora_inicio?.substring(0, 5)}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">🕑 Hora Fin:</span>
+                      <span className="modal-info-value">{claseSeleccionada.hora_fin?.substring(0, 5)}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="modal-info-label">🔢 Bloque:</span>
+                      <span className="modal-info-value">{claseSeleccionada.codigo_bloque || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ubicación Info */}
+                <div className="modal-section">
+                  <h3 className="modal-section-title">Ubicación</h3>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item modal-info-item-full">
+                      <span className="modal-info-label">🏫 Aula:</span>
+                      <span className="modal-info-value-highlight">{claseSeleccionada.aula_id || 'No asignada'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Docente Info */}
+                <div className="modal-section">
+                  <h3 className="modal-section-title">Docente</h3>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item modal-info-item-full">
+                      <span className="modal-info-label">👨‍🏫 Profesor:</span>
+                      <span className="modal-info-value">{claseSeleccionada.docente}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Asistencia Info */}
+                <div className="modal-section">
+                  <h3 className="modal-section-title">Asistencia</h3>
+                  <div className="modal-asistencia-container">
+                    <div className="modal-asistencia-value">
+                      {claseSeleccionada.porcentaje_asistencia}%
+                    </div>
+                    <div className="modal-asistencia-bar">
+                      <div 
+                        className="modal-asistencia-bar-fill"
+                        style={{ 
+                          width: `${claseSeleccionada.porcentaje_asistencia}%`,
+                          background: claseSeleccionada.porcentaje_asistencia >= 70 ? '#27ae60' : '#e74c3c'
+                        }}
+                      ></div>
+                    </div>
+                    <div className="modal-asistencia-label">
+                      {claseSeleccionada.porcentaje_asistencia >= 70 ? '✅ Buen nivel' : '⚠️ Atención requerida'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button className="modal-btn-close" onClick={cerrarModal}>
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         )}

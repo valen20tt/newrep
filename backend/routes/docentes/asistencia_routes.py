@@ -8,7 +8,7 @@ asistencia_bp = Blueprint('asistencia', __name__)
 @asistencia_bp.route("/estudiantes/<int:asignacion_id>", methods=['GET'])
 def obtener_estudiantes_clase(asignacion_id):
     """
-    Obtiene la lista de estudiantes y los horarios del bloque
+    Obtiene la lista de estudiantes y verifica si ya se tomó asistencia hoy
     """
     conn = None
     cur = None
@@ -17,6 +17,9 @@ def obtener_estudiantes_clase(asignacion_id):
         
         conn = get_db()
         cur = conn.cursor()
+        
+        # Obtener fecha actual
+        fecha_hoy = date.today().isoformat()
         
         # Primero obtener la información del horario del bloque
         cur.execute("""
@@ -33,6 +36,38 @@ def obtener_estudiantes_clase(asignacion_id):
         hora_inicio = str(horario_info[0]) if horario_info and horario_info[0] else None
         hora_fin = str(horario_info[1]) if horario_info and horario_info[1] else None
         dia = horario_info[2] if horario_info and horario_info[2] else None
+        
+        # Obtener curso_id y seccion_id
+        cur.execute("""
+            SELECT curso_id, seccion_id 
+            FROM asignaciones 
+            WHERE asignacion_id = %s
+        """, (asignacion_id,))
+        
+        result = cur.fetchone()
+        if not result:
+            return jsonify({'error': 'Asignación no encontrada'}), 404
+        
+        curso_id, seccion_id = result
+        
+        # ⚠️ VERIFICAR SI YA EXISTE ASISTENCIA PARA HOY
+        cur.execute("""
+            SELECT sesion_id
+            FROM sesion_clase
+            WHERE curso_id = %s 
+            AND seccion_id = %s 
+            AND fecha = %s
+        """, (curso_id, seccion_id, fecha_hoy))
+        
+        sesion_existente = cur.fetchone()
+        
+        if sesion_existente:
+            print(f"⚠️ Ya existe asistencia para hoy: {fecha_hoy}")
+            return jsonify({
+                'error': 'Ya se ha tomado asistencia para el día de hoy',
+                'asistencia_tomada': True,
+                'fecha': fecha_hoy
+            }), 400
         
         # Consulta de estudiantes
         query = """
@@ -101,11 +136,12 @@ def obtener_estudiantes_clase(asignacion_id):
             conn.close()
 
 
-# 2. REGISTRAR ASISTENCIA - ACTUALIZADO
+# 2. REGISTRAR ASISTENCIA - ✅ CORREGIDO CON VALIDACIÓN
 @asistencia_bp.route("/registrar", methods=['POST'])
 def registrar_asistencia():
     """
     Registra la asistencia usando asignacion_id
+    ✅ AHORA VALIDA DUPLICADOS ANTES DE REGISTRAR
     """
     conn = None
     cur = None
@@ -133,7 +169,27 @@ def registrar_asistencia():
         
         curso_id, seccion_id = result
         
-        # Crear registro de sesión
+        # ⚠️⚠️⚠️ VALIDACIÓN CRÍTICA: VERIFICAR SI YA EXISTE ASISTENCIA PARA ESA FECHA
+        cur.execute("""
+            SELECT sesion_id, fecha
+            FROM sesion_clase
+            WHERE curso_id = %s 
+            AND seccion_id = %s 
+            AND fecha = %s
+        """, (curso_id, seccion_id, data['fecha']))
+        
+        sesion_existente = cur.fetchone()
+        
+        if sesion_existente:
+            fecha_formateada = sesion_existente[1].strftime('%d/%m/%Y')
+            return jsonify({
+                'error': f'Ya existe un registro de asistencia para la fecha {fecha_formateada}. No se pueden crear registros duplicados.',
+                'asistencia_tomada': True,
+                'fecha': str(sesion_existente[1]),
+                'sesion_id': sesion_existente[0]
+            }), 409  # 409 Conflict
+        
+        # ✅ Si no existe, proceder a crear el registro de sesión
         cur.execute("""
             INSERT INTO sesion_clase 
             (curso_id, seccion_id, docente_id, fecha, hora_inicio, hora_fin, observaciones)
@@ -202,6 +258,8 @@ def registrar_asistencia():
                 'total_sesiones': row[4],
                 'porcentaje': float(row[5])
             })
+        
+        print(f"✅ Asistencia registrada exitosamente para sesión_id={sesion_id}")
         
         return jsonify({
             'message': 'Asistencia registrada exitosamente',
@@ -387,7 +445,6 @@ def obtener_historial_estudiante(matricula_id):
         
         historial = []
         for row in rows:
-            # Puedes calcular la semana aquí o en el frontend si es más complejo
             historial.append({
                 'fecha': str(row[0]) if row[0] else None,
                 'hora_inicio': str(row[1]) if row[1] else None,

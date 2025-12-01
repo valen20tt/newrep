@@ -13,6 +13,8 @@ function GestionarAlumno() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState("todos"); // 'todos', 'activos', 'inactivos'
+  const [mostrarModalReactivar, setMostrarModalReactivar] = useState(false);
   const [formData, setFormData] = useState({
     nombres: "",
     apellido_paterno: "",
@@ -54,7 +56,7 @@ function GestionarAlumno() {
         const apellido_paterno = data.apellidos.split(" ")[0] || "";
         const apellido_materno = data.apellidos.split(" ").slice(1).join(" ") || "";
 
-        setEstudianteSeleccionado(data);
+        setEstudianteSeleccionado({...data, estado: estudiante.estado});
         setFormData({
           nombres: data.nombres || "",
           apellido_paterno: apellido_paterno,
@@ -92,6 +94,11 @@ function GestionarAlumno() {
   };
 
   const handleEditar = () => {
+    // No permitir editar estudiantes inactivos
+    if (estudianteSeleccionado.estado === 'INACTIVO') {
+      setError("No puedes editar un estudiante inactivo. Primero debes reactivarlo.");
+      return;
+    }
     setModoEdicion(true);
     setMensaje("");
     setError("");
@@ -127,7 +134,7 @@ function GestionarAlumno() {
       const data = await response.json();
 
       if (response.ok) {
-        setMensaje("Estudiante eliminado correctamente ✅");
+        setMensaje("✅ Estudiante desactivado correctamente. Ya no podrá acceder al sistema.");
         setMostrarModalEliminar(false);
         setEstudianteSeleccionado(null);
         setFormData({
@@ -149,6 +156,32 @@ function GestionarAlumno() {
       console.error("Error:", error);
       setError("Error de conexión con el servidor");
       setMostrarModalEliminar(false);
+    }
+  };
+
+  const handleReactivar = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/admin/alumnos/alumnos/${estudianteSeleccionado.estudiante_id}/reactivar`,
+        { method: "PATCH" }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMensaje("✅ Estudiante reactivado correctamente. Ahora puede acceder al sistema.");
+        setMostrarModalReactivar(false);
+        await cargarEstudiantes();
+        // Actualizar el estado local del estudiante seleccionado
+        setEstudianteSeleccionado({...estudianteSeleccionado, estado: 'ACTIVO'});
+      } else {
+        setError(data.error || "Error al reactivar estudiante");
+        setMostrarModalReactivar(false);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Error de conexión con el servidor");
+      setMostrarModalReactivar(false);
     }
   };
 
@@ -200,14 +233,23 @@ function GestionarAlumno() {
     }
   };
 
+  // 🔄 FILTRADO mejorado con estado
   const estudiantesFiltrados = estudiantes.filter((est) => {
     const searchTerm = busqueda.toLowerCase();
-    return (
+    const cumpleBusqueda = 
       est.nombres.toLowerCase().includes(searchTerm) ||
       est.apellidos.toLowerCase().includes(searchTerm) ||
       est.codigo_universitario.toLowerCase().includes(searchTerm) ||
-      est.dni.includes(searchTerm)
-    );
+      est.dni.includes(searchTerm);
+
+    // Filtro por estado
+    if (filtroEstado === "activos") {
+      return cumpleBusqueda && est.estado === "ACTIVO";
+    } else if (filtroEstado === "inactivos") {
+      return cumpleBusqueda && est.estado === "INACTIVO";
+    }
+    
+    return cumpleBusqueda; // "todos"
   });
 
   if (cargando) {
@@ -238,6 +280,28 @@ function GestionarAlumno() {
               />
             </div>
 
+            {/* 🆕 FILTROS POR ESTADO */}
+            <div className="filtros-estado">
+              <button 
+                className={`filtro-btn ${filtroEstado === 'todos' ? 'activo' : ''}`}
+                onClick={() => setFiltroEstado('todos')}
+              >
+                Todos ({estudiantes.length})
+              </button>
+              <button 
+                className={`filtro-btn ${filtroEstado === 'activos' ? 'activo' : ''}`}
+                onClick={() => setFiltroEstado('activos')}
+              >
+                ✅ Activos ({estudiantes.filter(e => e.estado === 'ACTIVO').length})
+              </button>
+              <button 
+                className={`filtro-btn ${filtroEstado === 'inactivos' ? 'activo' : ''}`}
+                onClick={() => setFiltroEstado('inactivos')}
+              >
+                ❌ Inactivos ({estudiantes.filter(e => e.estado === 'INACTIVO').length})
+              </button>
+            </div>
+
             <div className="lista-estudiantes">
               {estudiantesFiltrados.length === 0 ? (
                 <p className="no-resultados">No se encontraron estudiantes</p>
@@ -249,13 +313,18 @@ function GestionarAlumno() {
                       estudianteSeleccionado?.estudiante_id === estudiante.estudiante_id
                         ? "seleccionado"
                         : ""
-                    }`}
+                    } ${estudiante.estado === 'INACTIVO' ? 'inactivo' : ''}`}
                     onClick={() => handleSeleccionarEstudiante(estudiante)}
                   >
                     <div className="estudiante-info">
-                      <strong>
-                        {estudiante.apellidos}, {estudiante.nombres}
-                      </strong>
+                      <div className="estudiante-header">
+                        <strong>
+                          {estudiante.apellidos}, {estudiante.nombres}
+                        </strong>
+                        <span className={`badge-estado ${estudiante.estado === 'ACTIVO' ? 'activo' : 'inactivo'}`}>
+                          {estudiante.estado === 'ACTIVO' ? '✓ Activo' : '✗ Inactivo'}
+                        </span>
+                      </div>
                       <small>Código: {estudiante.codigo_universitario}</small>
                       <small>DNI: {estudiante.dni}</small>
                     </div>
@@ -277,18 +346,39 @@ function GestionarAlumno() {
                   <h3>Detalles del Estudiante</h3>
                   {!modoEdicion && (
                     <div className="botones-accion">
-                      <button onClick={handleEditar} className="btn-editar">
-                        ✏️ Editar
-                      </button>
-                      <button
-                        onClick={() => setMostrarModalEliminar(true)}
-                        className="btn-eliminar"
-                      >
-                        🗑️ Eliminar
-                      </button>
+                      {estudianteSeleccionado.estado === 'INACTIVO' ? (
+                        <button 
+                          onClick={() => setMostrarModalReactivar(true)}
+                          className="btn-reactivar"
+                        >
+                          ✅ Reactivar
+                        </button>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={handleEditar} 
+                            className="btn-editar"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => setMostrarModalEliminar(true)}
+                            className="btn-eliminar"
+                          >
+                            🗑️ Desactivar
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* 🆕 ALERTA DE ESTADO INACTIVO */}
+                {estudianteSeleccionado.estado === 'INACTIVO' && (
+                  <div className="alert-warning">
+                    ⚠️ Este estudiante está <strong>INACTIVO</strong> y no puede acceder al sistema.
+                  </div>
+                )}
 
                 {mensaje && <div className="alert-success">{mensaje}</div>}
                 {error && <div className="alert-error">{error}</div>}
@@ -398,6 +488,7 @@ function GestionarAlumno() {
                       }
                       placeholder="Ejemplo: VIII"
                       autoComplete="off"
+                      disabled={!modoEdicion || isSubmitting}
                     />
                   </div>
 
@@ -461,9 +552,9 @@ function GestionarAlumno() {
           onClick={() => setMostrarModalEliminar(false)}
         >
           <div className="modal-confirmar" onClick={(e) => e.stopPropagation()}>
-            <h3>⚠️ Confirmar Eliminación</h3>
+            <h3>⚠️ Confirmar Desactivación</h3>
             <p>
-              ¿Estás seguro de que deseas eliminar al estudiante{" "}
+              ¿Estás seguro de que deseas <strong>desactivar</strong> al estudiante{" "}
               <strong>
                 {formData.nombres} {formData.apellido_paterno}{" "}
                 {formData.apellido_materno}
@@ -471,7 +562,7 @@ function GestionarAlumno() {
               ?
             </p>
             <p className="advertencia">
-              Esta acción desactivará al estudiante del sistema.
+              🔒 El estudiante no podrá acceder al sistema hasta que lo reactives.
             </p>
             <div className="modal-botones">
               <button
@@ -481,7 +572,40 @@ function GestionarAlumno() {
                 Cancelar
               </button>
               <button onClick={handleEliminar} className="btn-confirmar-eliminar">
-                Sí, Eliminar
+                Sí, Desactivar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mostrarModalReactivar && (
+        <div
+          className="modal-overlay"
+          onClick={() => setMostrarModalReactivar(false)}
+        >
+          <div className="modal-confirmar" onClick={(e) => e.stopPropagation()}>
+            <h3>✅ Confirmar Reactivación</h3>
+            <p>
+              ¿Estás seguro de que deseas <strong>reactivar</strong> al estudiante{" "}
+              <strong>
+                {formData.nombres} {formData.apellido_paterno}{" "}
+                {formData.apellido_materno}
+              </strong>
+              ?
+            </p>
+            <p className="advertencia-success">
+              🔓 El estudiante podrá volver a acceder al sistema.
+            </p>
+            <div className="modal-botones">
+              <button
+                onClick={() => setMostrarModalReactivar(false)}
+                className="btn-modal-cancelar"
+              >
+                Cancelar
+              </button>
+              <button onClick={handleReactivar} className="btn-confirmar-reactivar">
+                Sí, Reactivar
               </button>
             </div>
           </div>
