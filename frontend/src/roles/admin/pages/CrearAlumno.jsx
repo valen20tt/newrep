@@ -37,29 +37,11 @@ function CrearAlumno() {
   }, []);
 
   // ========== FUNCIÓN PARA GENERAR CORREO INSTITUCIONAL ==========
-  const generarCorreoInstitucional = (nombres, apellidoPaterno, apellidoMaterno) => {
-    if (!nombres || !apellidoPaterno || !apellidoMaterno) return "";
+  const generarCorreoInstitucional = (codigoUniversitario) => {
+    if (!codigoUniversitario || codigoUniversitario.length !== 10) return "";
     
-    // Limpiar y normalizar texto (quitar acentos y espacios)
-    const limpiar = (texto) => {
-      return texto
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
-        .replace(/\s+/g, ""); // Quitar espacios
-    };
-    
-    const nombreLimpio = limpiar(nombres);
-    const paternoLimpio = limpiar(apellidoPaterno);
-    const maternoLimpio = limpiar(apellidoMaterno);
-    
-    // Tomar primeras 4 letras del nombre
-    const parteNombre = nombreLimpio.substring(0, 4);
-    // Tomar primeras 2 letras de cada apellido
-    const partePaterno = paternoLimpio.substring(0, 2);
-    const parteMaterno = maternoLimpio.substring(0, 2);
-    
-    return `${parteNombre}${partePaterno}${parteMaterno}@alumnounfv.edu.pe`;
+    // Generar correo usando el código universitario
+    return `${codigoUniversitario}@alumnounfv.edu.pe`;
   };
 
   // ========== FUNCIONES DE VALIDACIÓN ==========
@@ -204,18 +186,14 @@ function CrearAlumno() {
       newValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     }
     
-    // ✅ MODIFICACIÓN: Generar correo automáticamente cuando cambian nombres o apellidos
+    // ✅ MODIFICACIÓN: Generar correo automáticamente cuando cambia el código universitario
     const newFormData = {
       ...formData,
       [name]: newValue
     };
     
-    if (name === 'nombres' || name === 'apellido_paterno' || name === 'apellido_materno') {
-      newFormData.correo_institucional = generarCorreoInstitucional(
-        name === 'nombres' ? newValue : formData.nombres,
-        name === 'apellido_paterno' ? newValue : formData.apellido_paterno,
-        name === 'apellido_materno' ? newValue : formData.apellido_materno
-      );
+    if (name === 'codigo_universitario') {
+      newFormData.correo_institucional = generarCorreoInstitucional(newValue);
     }
     
     setFormData(newFormData);
@@ -416,20 +394,20 @@ function CrearAlumno() {
             </div>
           </div>
 
-          {/* ✅ MODIFICACIÓN: Correo Institucional ahora es de solo lectura (generado automáticamente) */}
+          {/* ✅ MODIFICACIÓN: Correo Institucional ahora es de solo lectura (generado automáticamente con código) */}
           <div className="form-group">
             <label>Correo Institucional (Generado Automáticamente)</label>
             <input
               type="email"
               name="correo_institucional"
               value={formData.correo_institucional}
-              placeholder="Se generará automáticamente"
+              placeholder="Se generará con tu código universitario"
               readOnly
               disabled
               style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
             />
             <small style={{ color: '#6b7280', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
-              ℹ️ Se genera automáticamente: 4 letras del nombre + 2 de cada apellido
+              ℹ️ Se genera automáticamente usando tu código universitario
             </small>
           </div>
 
